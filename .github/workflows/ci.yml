@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Go tests
+        run: cd projects-go && go test ./...
+
+      - name: Sync data
+        run: cd projects-go && go build -o projects cmd/projects/main.go && ./projects
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build site
+        run: |
+          mkdir -p public/data
+          cp src/data/projects.json public/data/projects.json
+          cp src/data/changelog.json public/data/changelog.json
+          npm run build

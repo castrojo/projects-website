@@ -1,0 +1,7 @@
+{
+  "name": "projects-website",
+  "build": { "dockerfile": "Dockerfile" },
+  "forwardPorts": [4322, 8080],
+  "containerEnv": { "GOPATH": "/root/go" },
+  "postCreateCommand": "npm install && cd projects-go && go mod download"
+}
