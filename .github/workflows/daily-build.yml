@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Restore cache
         uses: actions/cache@v4
@@ -39,6 +39,7 @@ jobs:
           path: |
             .sync-cache
             src/data/changelog.json
+            src/data/projects.json
           key: sync-cache-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             sync-cache-${{ runner.os }}-
@@ -53,6 +54,7 @@ jobs:
           path: |
             .sync-cache
             src/data/changelog.json
+            src/data/projects.json
           key: sync-cache-${{ runner.os }}-${{ github.run_id }}
 
       - name: Install dependencies
