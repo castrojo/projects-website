@@ -18,7 +18,7 @@ jobs:
           node-version: '22'
 
       - name: Go tests
-        run: cd projects-go && go test ./...
+        run: cd projects-go && go test -race -cover ./...
 
       - name: Sync data
         run: cd projects-go && go build -o projects cmd/projects/main.go && ./projects
