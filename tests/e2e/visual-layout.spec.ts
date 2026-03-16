@@ -104,4 +104,19 @@ test.describe('visual layout verification', () => {
     const timelineVisible = await page.locator('.timeline-container').isVisible();
     expect(timelineVisible).toBe(true);
   });
+
+  test('site switcher pills do not have CNCF prefix', async ({ page }) => {
+    await page.goto('./');
+    const pills = await page.locator('.switcher-pill').allTextContents();
+    expect(pills).toContain('Projects');
+    expect(pills.every(p => !p.startsWith('CNCF'))).toBe(true);
+  });
+
+  test('active pill has blue background', async ({ page }) => {
+    await page.goto('./');
+    const activePill = page.locator('.switcher-pill.active');
+    const bg = await activePill.evaluate(el => getComputedStyle(el).backgroundColor);
+    // #0086FF = rgb(0, 134, 255)
+    expect(bg).toBe('rgb(0, 134, 255)');
+  });
 });

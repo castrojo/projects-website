@@ -42,6 +42,11 @@
   gap: 0.35rem;
   flex: 1;
   max-width: 600px;
+  align-items: center;
+}
+
+.nav-group .search-wrapper {
+  width: 100%;
 }
 
 .title-block {
@@ -50,6 +55,7 @@
   justify-content: center;
   height: 56px;
   gap: 0;
+  text-align: center;
 }
 
 .cncf-logo-wrapper {

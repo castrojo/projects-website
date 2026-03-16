@@ -300,6 +300,8 @@ function formatNumber(n: number): string {
       return false;
     },
     onResetFocus: resetFocus,
+    onSitePrev: () => { window.location.href = 'https://castrojo.github.io/people-website/'; },
+    onSiteNext: () => { window.location.href = 'https://castrojo.github.io/endusers-website/'; },
   });
 
   document.getElementById('help-button')?.addEventListener('click', () => {

@@ -15,6 +15,8 @@ interface KeyboardOptions {
   onTabCycle: (reverse: boolean) => void;
   onOpen: () => boolean;
   onResetFocus: () => void;
+  onSitePrev?: () => void;
+  onSiteNext?: () => void;
 }
 
 export function initKeyboard(opts: KeyboardOptions): void {
@@ -55,6 +57,8 @@ export function initKeyboard(opts: KeyboardOptions): void {
     else if (e.key === ' ' && !e.shiftKey) { e.preventDefault(); opts.onPageDown(); }
     else if (e.key === ' ' && e.shiftKey) { e.preventDefault(); opts.onPageUp(); }
     else if (e.key === 'Tab') { e.preventDefault(); opts.onTabCycle(e.shiftKey); }
+    else if (e.key === '[') { opts.onSitePrev?.(); }
+    else if (e.key === ']') { opts.onSiteNext?.(); }
     else if (e.key === 'o' || e.key === 'Enter') {
       if (opts.onOpen()) e.preventDefault();
     }
