@@ -191,6 +191,34 @@ const firstBatch = activeProjects.slice(0, STATIC_COUNT);
       document.getElementById('keyboard-help-modal')?.classList.remove('visible');
       document.getElementById('keyboard-help-backdrop')?.classList.remove('visible');
     },
+    onNext: () => {
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.project-card')).filter(c => c.style.display !== 'none' && c.offsetParent !== null);
+      if (!cards.length) return;
+      const currentIdx = cards.findIndex(c => c === document.activeElement || c.contains(document.activeElement));
+      const nextIdx = currentIdx < cards.length - 1 ? currentIdx + 1 : 0;
+      cards[nextIdx].setAttribute('tabindex', '-1');
+      cards[nextIdx].focus();
+      cards[nextIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const liveRegion = document.getElementById('kbd-live-region');
+      if (liveRegion) {
+        const name = cards[nextIdx].querySelector('.card-name, .project-name, h3, h4')?.textContent ?? '';
+        liveRegion.textContent = `Focused: ${name}`;
+      }
+    },
+    onPrev: () => {
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.project-card')).filter(c => c.style.display !== 'none' && c.offsetParent !== null);
+      if (!cards.length) return;
+      const currentIdx = cards.findIndex(c => c === document.activeElement || c.contains(document.activeElement));
+      const prevIdx = currentIdx > 0 ? currentIdx - 1 : cards.length - 1;
+      cards[prevIdx].setAttribute('tabindex', '-1');
+      cards[prevIdx].focus();
+      cards[prevIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const liveRegion = document.getElementById('kbd-live-region');
+      if (liveRegion) {
+        const name = cards[prevIdx].querySelector('.card-name, .project-name, h3, h4')?.textContent ?? '';
+        liveRegion.textContent = `Focused: ${name}`;
+      }
+    },
   });
 
   document.getElementById('help-button')?.addEventListener('click', () => {

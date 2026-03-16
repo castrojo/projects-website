@@ -6,6 +6,8 @@ interface KeyboardOptions {
   onTheme: () => void;
   onTab: (n: number) => void;
   onEscape: () => void;
+  onNext: () => void;
+  onPrev: () => void;
 }
 
 export function initKeyboard(opts: KeyboardOptions): void {
@@ -29,6 +31,12 @@ export function initKeyboard(opts: KeyboardOptions): void {
       opts.onTheme();
     } else if (e.key >= '1' && e.key <= '5') {
       opts.onTab(parseInt(e.key));
+    } else if (e.key === 'j') {
+      e.preventDefault();
+      opts.onNext();
+    } else if (e.key === 'k') {
+      e.preventDefault();
+      opts.onPrev();
     }
   });
 }
