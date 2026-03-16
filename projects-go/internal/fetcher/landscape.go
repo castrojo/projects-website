@@ -121,6 +121,7 @@ func toSafeProject(item models.FullItem, ghData map[string]models.GitHubItem) mo
 	if p.RepoURL != "" {
 		if gh, ok := ghData[p.RepoURL]; ok {
 			p.Stars = gh.Stars
+			p.Forks = gh.Forks
 			if gh.Description != "" {
 				p.Description = gh.Description
 			}

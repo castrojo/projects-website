@@ -56,6 +56,7 @@ type Audit struct {
 // GitHubItem is the pre-enriched GitHub data from full.json github_data map
 type GitHubItem struct {
 	Stars         int             `json:"stars"`
+	Forks         int             `json:"forks"`
 	Description   string          `json:"description"`
 	License       string          `json:"license"`
 	Topics        []string        `json:"topics"`
@@ -102,6 +103,7 @@ type SafeProject struct {
 	CloMonitorName  string   `json:"cloMonitorName,omitempty"`
 	Summary         string   `json:"summary,omitempty"`
 	Stars           int      `json:"stars,omitempty"`
+	Forks           int      `json:"forks,omitempty"`
 	Contributors    int      `json:"contributors,omitempty"`
 	LastCommitDate  string   `json:"lastCommitDate,omitempty"`
 	LastReleaseDate string   `json:"lastReleaseDate,omitempty"`

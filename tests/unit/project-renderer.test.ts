@@ -54,12 +54,12 @@ describe('renderCard', () => {
     expect(html).toContain('Apache-2.0');
   });
 
-  it('renders topic tags up to 3', () => {
-    const html = renderCard({ ...base, topics: ['cloud', 'containers', 'orchestration', 'extra'] });
+  it('renders topic tags up to 5', () => {
+    const html = renderCard({ ...base, topics: ['cloud', 'containers', 'orchestration', 'kubernetes', 'cncf', 'overflow-topic'] });
     expect(html).toContain('topic-tag');
     expect(html).toContain('cloud');
-    expect(html).toContain('orchestration');
-    expect(html).not.toContain('extra');
+    expect(html).toContain('cncf');
+    expect(html).not.toContain('overflow-topic');
   });
 
   it('renders audit badge when audited', () => {
@@ -79,5 +79,69 @@ describe('renderCard', () => {
     const html = renderCard({ ...base, blogUrl: 'https://blog.example.com', twitterUrl: 'https://twitter.com/k8s' });
     expect(html).toContain('Blog');
     expect(html).toContain('Twitter');
+  });
+
+  it('topics overflow badge: 6 topics shows 5 and +1', () => {
+    const html = renderCard({ ...base, topics: ['a', 'b', 'c', 'd', 'e', 'overflow-hidden'] });
+    expect(html).toContain('topic-tag');
+    expect(html).toContain('>a<');
+    expect(html).toContain('>e<');
+    expect(html).toContain('+1');
+    expect(html).not.toContain('overflow-hidden');
+  });
+
+  it('summary fallback when no description', () => {
+    const html = renderCard({ ...base, description: undefined, summary: 'This is a useful summary about the project.' });
+    expect(html).toContain('This is a useful summary about the project.');
+  });
+
+  it('summary used when description shorter than 80 chars', () => {
+    const html = renderCard({ ...base, description: 'Short desc', summary: 'This is the longer summary that should be used instead of the short description.' });
+    expect(html).toContain('This is the longer summary that should be used instead of the short description.');
+    expect(html).not.toContain('Short desc');
+  });
+
+  it('description wins over summary when >= 80 chars', () => {
+    const longDesc = 'This is a long description that is definitely at least eighty characters in total length here.';
+    const html = renderCard({ ...base, description: longDesc, summary: 'Summary text' });
+    expect(html).toContain(longDesc);
+    expect(html).not.toContain('Summary text');
+  });
+
+  it('renders forks stat', () => {
+    const html = renderCard({ ...base, forks: 5000 });
+    expect(html).toContain('stat-item');
+    expect(html).toContain('5.0k');
+    expect(html).toContain('Forks');
+  });
+
+  it('renders lfxSlug link', () => {
+    const html = renderCard({ ...base, lfxSlug: 'kubernetes' });
+    expect(html).toContain('href="https://insights.lfx.linuxfoundation.org/foundation/cncf/overview/github?project=kubernetes"');
+    expect(html).toContain('LFX');
+  });
+
+  it('renders cloMonitorName link', () => {
+    const html = renderCard({ ...base, cloMonitorName: 'kubernetes' });
+    expect(html).toContain('href="https://clomonitor.io/projects/cncf/kubernetes"');
+    expect(html).toContain('CLO');
+  });
+
+  it('renders lastReleaseDate in activity', () => {
+    const html = renderCard({ ...base, lastReleaseDate: '2024-11-15' });
+    expect(html).toContain('Released');
+    expect(html).toContain('release-item');
+  });
+
+  it('renders firstCommitDate age badge with years', () => {
+    const html = renderCard({ ...base, firstCommitDate: '2014-06-06' });
+    expect(html).toContain('age-badge');
+    expect(html).toContain('yr');
+  });
+
+  it('escapes XSS in lfxSlug and cloMonitorName', () => {
+    const html = renderCard({ ...base, lfxSlug: '"><script>alert(1)</script>', cloMonitorName: '"><script>bad</script>' });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
   });
 });

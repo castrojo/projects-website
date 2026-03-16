@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/castrojo/projects-website/projects-go/internal/differ"
+	"github.com/castrojo/projects-website/projects-go/internal/enricher"
 	"github.com/castrojo/projects-website/projects-go/internal/fetcher"
 	"github.com/castrojo/projects-website/projects-go/internal/state"
 	"github.com/castrojo/projects-website/projects-go/internal/writer"
@@ -36,6 +37,15 @@ func main() {
 	}
 
 	fmt.Printf("Fetched %d CNCF projects\n", len(result.Projects))
+
+	githubExtrasPath := ".sync-cache/github_extras.json"
+	extrasCache, _ := enricher.LoadCache(githubExtrasPath)
+	token := os.Getenv("GITHUB_TOKEN")
+	apiCalls := enricher.EnrichForks(result.Projects, extrasCache, token)
+	if apiCalls > 0 {
+		fmt.Printf("Enriched forks for %d projects via GitHub API\n", apiCalls)
+		_ = enricher.SaveCache(githubExtrasPath, extrasCache)
+	}
 
 	prevData, _ := state.LoadPreviousProjects()
 	events, updatedAt := differ.Diff(prevData, result.Projects)

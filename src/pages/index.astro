@@ -1,6 +1,6 @@
 ---
 import ProjectsLayout from '../layouts/ProjectsLayout.astro';
-import { renderCard } from '../lib/project-renderer';
+import { renderCard, formatRelativeDate } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
 import { selectHeroSets } from '../lib/heroes';
 import staffSupportData from '../data/staff-support.json';
@@ -62,12 +62,15 @@ function formatNumber(n: number): string {
               <div class="hero-info">
                 <a class="hero-name" href={p.homepageUrl || p.repoUrl || '#'} target="_blank" rel="noopener">{p.name}</a>
                 <span class="hero-category">{p.category}</span>
-                {(p.stars || p.contributors) && (
+                {(p.stars || p.forks || p.contributors) && (
                   <div class="hero-stats">
                     {p.stars && <span>{formatNumber(p.stars)} stars</span>}
+                    {p.forks && <span>{formatNumber(p.forks)} forks</span>}
                     {p.contributors && <span>{formatNumber(p.contributors)} contrib</span>}
                   </div>
                 )}
+                {p.lastReleaseDate && <span class="hero-release">Released {formatRelativeDate(p.lastReleaseDate)}</span>}
+                {(p.summary || p.description) && <p class="hero-desc">{(p.summary || p.description)?.substring(0, 100)}</p>}
               </div>
             </div>
           );
@@ -411,6 +414,19 @@ function formatNumber(n: number): string {
     justify-content: center;
     font-size: 0.7rem;
     color: var(--color-text-secondary);
+  }
+  .hero-release {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+  .hero-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0.25rem 0 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .project-card.keyboard-focused,
