@@ -83,7 +83,7 @@ function formatAge(iso: string): string {
   return `${Math.floor(days / 30)} mo`;
 }
 
-export function renderCard(p: SafeProject): string {
+export function renderCard(p: SafeProject, eventBanner?: string): string {
   const color = MATURITY_COLORS[p.maturity] ?? '#8b949e';
   const label = p.maturity.charAt(0).toUpperCase() + p.maturity.slice(1);
   const name = escapeHtml(p.name);
@@ -133,7 +133,7 @@ export function renderCard(p: SafeProject): string {
     : `<div style="width:64px;height:64px;background:${color}22;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="font-size:1.5rem;color:${color}">${name[0]}</span></div>`;
 
   return `<article
-    class="project-card letterbox-card"
+    class="project-card letterbox-card changelog-event-card"
     style="display:flex;flex-direction:row;gap:1rem;align-items:flex-start;padding:1rem;--card-accent:${color}"
     data-maturity="${escHtml(p.maturity)}"
     data-slug="${escHtml(p.slug)}"
@@ -144,6 +144,7 @@ export function renderCard(p: SafeProject): string {
       ${logoHtml}
     </div>
     <div class="letterbox-body" style="flex:1;min-width:0">
+      ${eventBanner ? `<div class="event-banner" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">${eventBanner}</div>` : ''}
       <div class="letterbox-header" style="display:flex;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.375rem">
         <h3 class="card-name" style="margin:0;font-size:1rem;font-weight:600;flex:1;min-width:0">${name}</h3>
         <div style="display:flex;gap:0.375rem;align-items:center;flex-shrink:0">

@@ -97,10 +97,46 @@ When you need to look up CNCF project data as an AI agent, use the MCP server:
 The Go backend fetches full.json directly (richer fields than MCP). The MCP server
 is for AI agent queries only.
 
-## Testing Rules
+## Testing Rules — TDD Required (Non-Negotiable)
 
-- Run `npx playwright test` before and after any change
-- Visual layout tests in `tests/e2e/visual-layout.spec.ts` check computed CSS
+**Tests MUST be written before implementation. Always.**
+
+### The mandatory TDD workflow for any renderer or component change:
+
+1. **Baseline**: Run `just test` — confirm all tests green before touching anything
+2. **Write tests first**: For EVERY FIELD the component should render, write a test that verifies it
+   - Not just class names or element existence — the actual content
+   - Stars, links, descriptions, topics, category — the **richness**
+3. **Run `just test` → new tests MUST FAIL** (red is correct here; proves the tests are real)
+4. **Implement** the change
+5. **Run `just test` → ALL tests MUST PASS** (green)
+6. Never commit code written before its tests. Never commit when tests are red.
+
+### What counts as a "richness test" (required for every renderer):
+
+| ❌ BAD — structure only | ✅ GOOD — richness |
+|---|---|
+| `expect(html).toContain('changelog-event-card')` | `expect(html).toContain('stat-item')` |
+| `expect(html).toContain('Kubernetes')` | `expect(html).toContain('110.0k')` (stars value) |
+| `expect(html).toContain('accepted')` | `expect(html).toContain('href="https://github.com/...')` |
+
+### Cross-renderer contract rule:
+
+If renderer B wraps renderer A (e.g. `changelog-renderer` calls `renderCard`), **B's tests MUST
+include all fields that A's tests cover**. This prevents silent stripping when refactoring.
+
+Example: `project-renderer.test.ts` tests 20 fields on `renderCard`. `changelog-renderer.test.ts`
+must have a `with full SafeProject` describe block that tests the same 20 fields.
+
+### Why this rule exists (post-mortem, 2026-03-16):
+
+The LWCN changelog implementation replaced `renderCard()` with a new `renderChangelogEvent()` that
+stripped ALL rich fields (stars, links, topics, etc.). The tests passed because they only checked
+class names and project name — not the actual content that users see.
+
+The rule: **if your tests would pass on an empty `<div>Kubernetes</div>`, they are insufficient.**
+
+- Run `npx playwright test` before and after any change (E2E)
 - Element-existence tests alone are insufficient — CSS can be broken while tests pass
 - Run E2E tests sequentially when running all 3 sites (port conflicts)
 

@@ -170,6 +170,9 @@ function formatNumber(n: number): string {
     // Resolve which changelog events to show
     let events = filterChangelogByTab(allChangelog, currentTab);
 
+    // Build project lookup for rich card rendering
+    const projectsBySlug = new Map(allProjects.map(p => [p.slug, p]));
+
     // Apply category filter (project events only — match via projectSlug → project category)
     if (currentCategory) {
       const slugsInCategory = new Set(
@@ -201,12 +204,16 @@ function formatNumber(n: number): string {
       }
       const hasResults = projectEvents.length > 0;
       noResults.style.display = hasResults ? 'none' : 'block';
-      container.innerHTML = hasResults ? projectEvents.map(renderChangelogEvent).join('') : '';
+      container.innerHTML = hasResults
+        ? projectEvents.map(e => renderChangelogEvent(e, e.projectSlug ? projectsBySlug.get(e.projectSlug) : undefined)).join('')
+        : '';
     } else {
       lwcnContainer.style.display = 'none';
       const hasResults = events.length > 0;
       noResults.style.display = hasResults ? 'none' : 'block';
-      container.innerHTML = hasResults ? events.map(renderChangelogEvent).join('') : '';
+      container.innerHTML = hasResults
+        ? events.map(e => renderChangelogEvent(e, e.projectSlug ? projectsBySlug.get(e.projectSlug) : undefined)).join('')
+        : '';
     }
 
     const countEl = document.getElementById('search-count');
@@ -372,9 +379,9 @@ function formatNumber(n: number): string {
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--color-text-primary);
-    margin: 0 0 1rem 0;
+    margin: 2rem 0 1.5rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--color-border-default);
+    border-bottom: 2px solid var(--color-accent-emphasis);
   }
 
   #lwcn-container {
