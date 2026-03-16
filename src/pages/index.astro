@@ -182,7 +182,7 @@ const firstBatch = activeProjects.slice(0, STATIC_COUNT);
     },
     onTab: (n) => {
       const tab = tabFromNumber(n);
-      document.querySelector<HTMLElement>(`.tab-button[data-tab="${tab}"]`)?.click();
+      document.querySelector<HTMLElement>(`.section-link[data-tab="${tab}"]`)?.click();
     },
     onEscape: () => {
       searchInput.value = '';

@@ -32,45 +32,57 @@ const banners = await getActiveBanners();
   <meta name="description" content="Discover CNCF cloud native projects — graduated, incubating, sandbox, and archived." />
   <link rel="alternate" type="application/rss+xml" title="CNCF Projects Feed" href={`${base}/feed.xml`} />
   <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  <script is:inline>
+    (function() {
+      const getTheme = () => {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') return stored;
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+        return 'light';
+      };
+      document.documentElement.setAttribute('data-theme', getTheme());
+    })();
+  </script>
 </head>
 <body>
   <header class="site-header">
-    <div class="header-inner">
-      <div class="header-brand">
-        <img src={`${base}/cncf-icon-color.svg`} alt="CNCF" class="site-logo logo-light" width="36" height="36" />
-        <img src={`${base}/cncf-icon-white.svg`} alt="CNCF" class="site-logo logo-dark" width="36" height="36" />
-        <div class="site-title-group">
-          <h1>CNCF Projects</h1>
-          <p class="site-subtitle" id="rotating-slogan" aria-live="polite">Built for the love of the game</p>
+    <div class="container">
+      <div class="header-inner">
+        <div class="header-left">
+          <div class="logo-title">
+            <span class="cncf-logo-wrapper" aria-hidden="true">
+              <img src={`${base}/cncf-icon-color.svg`} alt="CNCF" class="logo-light" width="56" height="56" />
+              <img src={`${base}/cncf-icon-white.svg`} alt="CNCF" class="logo-dark" width="56" height="56" />
+            </span>
+            <div class="title-block">
+              <h1 class="site-title"><a href={base || '/'} class="home-link">CNCF Projects</a></h1>
+              <p class="site-subtitle" id="rotating-slogan" aria-live="polite">Built for the love of the game</p>
+            </div>
+            <SiteSwitcher activeSite="projects" />
+          </div>
+          <div class="search-wrapper">
+            <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
+            <span class="search-count" id="search-count"></span>
+          </div>
         </div>
-        <SiteSwitcher activeSite="projects" />
-      </div>
-      <div class="header-controls">
-        <div class="search-wrapper">
-          <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
-          <span class="search-count" id="search-count"></span>
+        <div class="header-actions">
+          <ThemeToggle />
+          <button id="help-button" class="icon-button" aria-label="Keyboard shortcuts (?)" title="Keyboard shortcuts (?)">?</button>
         </div>
-        <ThemeToggle />
-        <button id="help-button" class="icon-button" aria-label="Keyboard shortcuts (?)" title="Keyboard shortcuts (?)">?</button>
       </div>
+      <nav class="section-nav" aria-label="Project maturity tabs">
+        <button class="section-link active" data-tab="everyone">Everyone</button>
+        <button class="section-link" data-tab="graduated">Graduated</button>
+        <button class="section-link" data-tab="incubating">Incubating</button>
+        <button class="section-link" data-tab="sandbox">Sandbox</button>
+        <button class="section-link" data-tab="archived">Archived</button>
+      </nav>
     </div>
   </header>
 
-  <nav class="tab-nav" aria-label="Project maturity tabs">
-    <ul class="tab-list">
-      <li><button class="tab-button active" data-tab="everyone">Everyone</button></li>
-      <li><button class="tab-button" data-tab="graduated">Graduated</button></li>
-      <li><button class="tab-button" data-tab="incubating">Incubating</button></li>
-      <li><button class="tab-button" data-tab="sandbox">Sandbox</button></li>
-      <li><button class="tab-button" data-tab="archived">Archived</button></li>
-    </ul>
-  </nav>
-
-  <main class="main-content">
-    <div class="content-area">
-      <slot />
-    </div>
-    <aside class="sidebar">
+  <main class="container">
+    <div class="page-layout">
+      <aside class="sidebar">
       {stats && (
         <div class="stats-box">
           <h2 class="sidebar-heading">Projects</h2>
@@ -104,6 +116,10 @@ const banners = await getActiveBanners();
       />
       {banners.length > 0 && <KubeConBanner banners={banners} />}
     </aside>
+      <div class="main-content">
+        <slot />
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -147,8 +163,11 @@ const banners = await getActiveBanners();
 
   .logo-light { display: block; }
   .logo-dark  { display: none; }
+  .cncf-logo-wrapper .logo-dark { display: none; }
   [data-theme="dark"] .logo-light { display: none; }
   [data-theme="dark"] .logo-dark  { display: block; }
+  [data-theme="dark"] .cncf-logo-wrapper .logo-light { display: none; }
+  [data-theme="dark"] .cncf-logo-wrapper .logo-dark { display: block; }
 
   .icon-button {
     background: none;
@@ -189,7 +208,6 @@ const banners = await getActiveBanners();
   .stat-sandbox .stat-value { color: var(--color-sandbox, #8b949e); }
   .stat-archived .stat-value { color: var(--color-archived, #6b7280); }
 
-  .search-wrapper { position: relative; }
   .search-count { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--color-text-muted); pointer-events: none; }
 
   .filter-box {

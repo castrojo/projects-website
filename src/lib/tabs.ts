@@ -6,7 +6,7 @@ export function initTabs(onTabChange: (tabId: TabId) => void): void {
   const savedTab = (localStorage.getItem(TAB_STORAGE_KEY) as TabId) ?? 'everyone';
   activateTab(savedTab, onTabChange);
 
-  document.querySelectorAll('.tab-button').forEach(btn => {
+  document.querySelectorAll('.section-link').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = (btn as HTMLElement).dataset.tab as TabId;
       if (tab) {
@@ -18,7 +18,7 @@ export function initTabs(onTabChange: (tabId: TabId) => void): void {
 }
 
 export function activateTab(tabId: TabId, onTabChange: (tabId: TabId) => void): void {
-  document.querySelectorAll('.tab-button').forEach(btn => {
+  document.querySelectorAll('.section-link').forEach(btn => {
     const active = (btn as HTMLElement).dataset.tab === tabId;
     btn.classList.toggle('active', active);
   });
