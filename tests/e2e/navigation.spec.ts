@@ -27,11 +27,11 @@ test.describe('navigation', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('hero section shows 4 spotlight cards', async ({ page }) => {
-    const heroes = page.locator('.hero-card');
-    await expect(heroes.first()).toBeVisible({ timeout: 5000 });
-    const count = await heroes.count();
-    expect(count).toBe(4);
+  test('hero section shows 8 spotlight cards per tab', async ({ page }) => {
+    const visibleGrid = page.locator('.heroes-grid[data-heroes-tab="everyone"]');
+    await expect(visibleGrid).toBeVisible({ timeout: 5000 });
+    const count = await visibleGrid.locator('.hero-card').count();
+    expect(count).toBe(8);
   });
 
   test('cards contain expected content: badge, name, description', async ({ page }) => {

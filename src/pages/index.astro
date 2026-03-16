@@ -2,7 +2,7 @@
 import ProjectsLayout from '../layouts/ProjectsLayout.astro';
 import { renderCard } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
-import { selectHeroes } from '../lib/heroes';
+import { selectHeroSets } from '../lib/heroes';
 import ProjectMaintainerCard from '../components/ProjectMaintainerCard.astro';
 import type { ProjectMaintainer } from '../components/ProjectMaintainerCard.astro';
 import fs from 'node:fs';
@@ -27,7 +27,10 @@ try {
 
 const categories = [...new Set(projects.filter(p => p.maturity !== 'archived').map(p => p.category).filter(Boolean))].sort();
 
-const heroes = selectHeroes(projects);
+const heroSets = selectHeroSets(projects);
+const MATURITY_COLORS: Record<string, string> = {
+  graduated: '#FFB300', incubating: '#0086FF', sandbox: '#8b949e', archived: '#6b7280',
+};
 const STATIC_COUNT = 30;
 const activeProjects = projects.filter(p => p.maturity !== 'archived');
 const firstBatch = activeProjects.slice(0, STATIC_COUNT);
@@ -86,64 +89,35 @@ try {
 ---
 <ProjectsLayout stats={stats} categories={categories}>
   <section class="heroes-section">
-    <div class="heroes-grid">
-      {heroes.graduated && (
-        <div class="hero-card" style="--card-accent: #FFB300" data-slug={heroes.graduated.slug}>
-          <div class="hero-label" style="background: #FFB300">Graduated</div>
-          {heroes.graduated.logoUrl && <img src={heroes.graduated.logoUrl} alt={`${heroes.graduated.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
-          <div class="hero-content">
-            <a class="hero-name" href={heroes.graduated.homepageUrl || heroes.graduated.repoUrl || '#'} target="_blank" rel="noopener">{heroes.graduated.name}</a>
-            <div class="hero-meta">
-              {heroes.graduated.stars ? <span class="hero-stat">{formatNumber(heroes.graduated.stars)} stars</span> : null}
-              {heroes.graduated.contributors ? <span>{formatNumber(heroes.graduated.contributors)} contribs</span> : null}
+    {(Object.entries(heroSets) as [string, SafeProject[]][]).map(([tabKey, heroes]) => (
+      <div class="heroes-grid" data-heroes-tab={tabKey} style={tabKey !== 'everyone' ? 'display:none' : ''}>
+        {heroes.map(p => {
+          const color = MATURITY_COLORS[p.maturity] ?? '#8b949e';
+          const label = p.maturity.charAt(0).toUpperCase() + p.maturity.slice(1);
+          return (
+            <div class="hero-card" style={`--hero-color:${color}`} data-slug={p.slug}>
+              <span class="hero-label">{label}</span>
+              {p.logoUrl && (
+                <div class="hero-logo-wrap">
+                  <img src={p.logoUrl} alt={`${p.name} logo`} width="96" height="96" loading="lazy"
+                    style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.25))" />
+                </div>
+              )}
+              <div class="hero-info">
+                <a class="hero-name" href={p.homepageUrl || p.repoUrl || '#'} target="_blank" rel="noopener">{p.name}</a>
+                <span class="hero-category">{p.category}</span>
+                {(p.stars || p.contributors) && (
+                  <div class="hero-stats">
+                    {p.stars && <span>{formatNumber(p.stars)} stars</span>}
+                    {p.contributors && <span>{formatNumber(p.contributors)} contrib</span>}
+                  </div>
+                )}
+              </div>
             </div>
-            <span class="hero-category">{heroes.graduated.category}</span>
-          </div>
-        </div>
-      )}
-      {heroes.incubating && (
-        <div class="hero-card" style="--card-accent: #0086FF" data-slug={heroes.incubating.slug}>
-          <div class="hero-label" style="background: #0086FF">Incubating</div>
-          {heroes.incubating.logoUrl && <img src={heroes.incubating.logoUrl} alt={`${heroes.incubating.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
-          <div class="hero-content">
-            <a class="hero-name" href={heroes.incubating.homepageUrl || heroes.incubating.repoUrl || '#'} target="_blank" rel="noopener">{heroes.incubating.name}</a>
-            <div class="hero-meta">
-              {heroes.incubating.stars ? <span class="hero-stat">{formatNumber(heroes.incubating.stars)} stars</span> : null}
-              {heroes.incubating.contributors ? <span>{formatNumber(heroes.incubating.contributors)} contribs</span> : null}
-            </div>
-            <span class="hero-category">{heroes.incubating.category}</span>
-          </div>
-        </div>
-      )}
-      {heroes.sandbox && (
-        <div class="hero-card" style="--card-accent: #8b949e" data-slug={heroes.sandbox.slug}>
-          <div class="hero-label" style="background: #8b949e">Sandbox</div>
-          {heroes.sandbox.logoUrl && <img src={heroes.sandbox.logoUrl} alt={`${heroes.sandbox.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
-          <div class="hero-content">
-            <a class="hero-name" href={heroes.sandbox.homepageUrl || heroes.sandbox.repoUrl || '#'} target="_blank" rel="noopener">{heroes.sandbox.name}</a>
-            <div class="hero-meta">
-              {heroes.sandbox.stars ? <span class="hero-stat">{formatNumber(heroes.sandbox.stars)} stars</span> : null}
-              {heroes.sandbox.contributors ? <span>{formatNumber(heroes.sandbox.contributors)} contribs</span> : null}
-            </div>
-            <span class="hero-category">{heroes.sandbox.category}</span>
-          </div>
-        </div>
-      )}
-      {heroes.recentlyAccepted && (
-        <div class="hero-card" style="--card-accent: #00A86B" data-slug={heroes.recentlyAccepted.slug}>
-          <div class="hero-label" style="background: #00A86B">Recently Accepted</div>
-          {heroes.recentlyAccepted.logoUrl && <img src={heroes.recentlyAccepted.logoUrl} alt={`${heroes.recentlyAccepted.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
-          <div class="hero-content">
-            <a class="hero-name" href={heroes.recentlyAccepted.homepageUrl || heroes.recentlyAccepted.repoUrl || '#'} target="_blank" rel="noopener">{heroes.recentlyAccepted.name}</a>
-            <div class="hero-meta">
-              {heroes.recentlyAccepted.stars ? <span class="hero-stat">{formatNumber(heroes.recentlyAccepted.stars)} stars</span> : null}
-              {heroes.recentlyAccepted.contributors ? <span>{formatNumber(heroes.recentlyAccepted.contributors)} contribs</span> : null}
-            </div>
-            <span class="hero-category">{heroes.recentlyAccepted.category}</span>
-          </div>
-        </div>
-      )}
-    </div>
+          );
+        })}
+      </div>
+    ))}
   </section>
 
   <section class="maintainers-section">
@@ -268,8 +242,16 @@ try {
 
   loadProjects().then(() => renderCurrentView());
 
+  function showHeroesForTab(tab: string) {
+    const heroKey = ['graduated','incubating','sandbox'].includes(tab) ? tab : 'everyone';
+    document.querySelectorAll<HTMLElement>('.heroes-grid[data-heroes-tab]').forEach(grid => {
+      grid.style.display = grid.dataset.heroesTab === heroKey ? 'grid' : 'none';
+    });
+  }
+
   initTabs((tab) => {
     currentTab = tab;
+    showHeroesForTab(tab);
     renderCurrentView();
   });
 
@@ -355,13 +337,80 @@ try {
 
   .heroes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
 
+  .hero-card {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--hero-color) 18%, transparent), color-mix(in srgb, var(--hero-color) 6%, transparent));
+    border: 1px solid var(--color-border-default);
+    border-top: 4px solid var(--hero-color, #0086FF);
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-align: center;
+  }
+  .hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  .hero-label {
+    align-self: flex-start;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--hero-color);
+    color: #fff;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+  .hero-logo-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+  }
+  .hero-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .hero-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hero-name:hover { text-decoration: underline; }
   .hero-category {
     font-size: 0.7rem;
     color: var(--color-text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
   }
 
   .project-card.keyboard-focused,

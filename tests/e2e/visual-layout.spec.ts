@@ -36,19 +36,40 @@ test.describe('visual layout verification', () => {
     expect(positions!.sidebarX).toBeLessThan(positions!.mainX);
   });
 
-  test('hero cards render in a multi-column grid', async ({ page }) => {
-    const heroGrid = await page.evaluate(() => {
-      const grid = document.querySelector('.heroes-grid');
-      if (!grid) return null;
-      const cs = getComputedStyle(grid);
-      return { display: cs.display, cols: cs.gridTemplateColumns };
-    });
-    // Heroes grid should exist and have multiple columns
-    if (heroGrid) {
-      expect(heroGrid.display).toBe('grid');
-      const colCount = heroGrid.cols.split(' ').length;
-      expect(colCount).toBeGreaterThanOrEqual(2);
-    }
+  test('hero grid has 4 columns', async ({ page }) => {
+    await page.goto('./');
+    const visibleGrid = page.locator('.heroes-grid[data-heroes-tab]').filter({ hasNot: page.locator('[style*="display:none"]') }).first();
+    const cols = await visibleGrid.evaluate(el => getComputedStyle(el).gridTemplateColumns);
+    expect(cols.split(' ')).toHaveLength(4);
+  });
+
+  test('hero cards are square (aspect-ratio ~1)', async ({ page }) => {
+    await page.goto('./');
+    const box = await page.locator('.hero-card').first().boundingBox();
+    expect(box).toBeTruthy();
+    expect(Math.abs(box!.width - box!.height) / box!.width).toBeLessThan(0.15);
+  });
+
+  test('graduated tab shows graduated hero cards', async ({ page }) => {
+    await page.goto('./');
+    await page.click('.section-link[data-tab="graduated"]');
+    await page.waitForTimeout(200);
+    const visibleGrid = page.locator('.heroes-grid[data-heroes-tab="graduated"]');
+    await expect(visibleGrid).toBeVisible();
+    const heroCount = await visibleGrid.locator('.hero-card').count();
+    expect(heroCount).toBeGreaterThanOrEqual(1);
+  });
+
+  test('heroes change between tabs', async ({ page }) => {
+    await page.goto('./');
+    const everyoneGridVisible = await page.locator('.heroes-grid[data-heroes-tab="everyone"]').isVisible();
+    expect(everyoneGridVisible).toBe(true);
+    await page.click('.section-link[data-tab="graduated"]');
+    await page.waitForTimeout(200);
+    const graduatedGridVisible = await page.locator('.heroes-grid[data-heroes-tab="graduated"]').isVisible();
+    expect(graduatedGridVisible).toBe(true);
+    const everyoneGridNowHidden = await page.locator('.heroes-grid[data-heroes-tab="everyone"]').isVisible();
+    expect(everyoneGridNowHidden).toBe(false);
   });
 
   test('cards-container uses flex column layout for letterbox cards', async ({ page }) => {
@@ -61,15 +82,6 @@ test.describe('visual layout verification', () => {
     expect(cardsContainer).not.toBeNull();
     expect(cardsContainer!.display).toBe('flex');
     expect(cardsContainer!.flexDirection).toBe('column');
-  });
-
-  test('hero cards have visual design (not identical style)', async ({ page }) => {
-    const heroCards = page.locator('.hero-card');
-    await expect(heroCards).toHaveCount(4);
-    const labels = await heroCards.locator('.hero-label').allTextContents();
-    expect(labels).toContain('Graduated');
-    expect(labels).toContain('Incubating');
-    expect(labels).toContain('Sandbox');
   });
 
   test('maintainers section renders with cards', async ({ page }) => {
