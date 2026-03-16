@@ -3,9 +3,11 @@ import ProjectsLayout from '../layouts/ProjectsLayout.astro';
 import { renderCard } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
 import { selectHeroSets } from '../lib/heroes';
-import ProjectMaintainerCard from '../components/ProjectMaintainerCard.astro';
-import type { ProjectMaintainer } from '../components/ProjectMaintainerCard.astro';
+import staffSupportData from '../data/staff-support.json';
 import fs from 'node:fs';
+
+interface StaffMember { handle?: string; name: string; imageUrl?: string; }
+const staffList = staffSupportData.maintainers as StaffMember[];
 
 const base = import.meta.env.BASE_URL;
 
@@ -28,6 +30,7 @@ try {
 const categories = [...new Set(projects.filter(p => p.maturity !== 'archived').map(p => p.category).filter(Boolean))].sort();
 
 const heroSets = selectHeroSets(projects);
+
 const MATURITY_COLORS: Record<string, string> = {
   graduated: '#FFB300', incubating: '#0086FF', sandbox: '#8b949e', archived: '#6b7280',
 };
@@ -38,53 +41,6 @@ const firstBatch = activeProjects.slice(0, STATIC_COUNT);
 function formatNumber(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
   return String(n);
-}
-
-// Fetch and parse CNCF project maintainers CSV at build time
-const MATURITY_ORDER: Record<string, number> = { Graduated: 3, Incubating: 2, Sandbox: 1 };
-
-let maintainers: ProjectMaintainer[] = [];
-try {
-  const res = await fetch('https://raw.githubusercontent.com/cncf/foundation/main/project-maintainers.csv');
-  if (res.ok) {
-    const text = await res.text();
-    const lines = text.split('\n').filter(l => l.trim());
-    // skip header row
-    const byHandle = new Map<string, { name: string; handle: string; projects: string[]; maturityScore: number; maturity: string }>();
-    for (const line of lines.slice(1)) {
-      // CSV: Maturity,Project,Name,GitHub Handle,CNCFAssociated,Email
-      const cols = line.split(',');
-      if (cols.length < 4) continue;
-      const maturity = cols[0]?.trim() ?? '';
-      const project = cols[1]?.trim() ?? '';
-      const name = cols[2]?.trim() ?? '';
-      const handle = cols[3]?.trim().replace(/^@/, '') ?? '';
-      // never expose email (cols[5])
-      if (!handle || !name) continue;
-      const score = MATURITY_ORDER[maturity] ?? 0;
-      if (!byHandle.has(handle)) {
-        byHandle.set(handle, { name, handle, projects: [], maturityScore: score, maturity });
-      }
-      const entry = byHandle.get(handle)!;
-      if (project && !entry.projects.includes(project)) entry.projects.push(project);
-      if (score > entry.maturityScore) {
-        entry.maturityScore = score;
-        entry.maturity = maturity;
-      }
-    }
-    maintainers = [...byHandle.values()]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(0, 30)
-      .map(m => ({
-        name: m.name,
-        handle: m.handle,
-        projects: m.projects,
-        maturity: m.maturity,
-        avatarUrl: `https://avatars.githubusercontent.com/${m.handle}?s=128`,
-      }));
-  }
-} catch {
-  // network unavailable at build time — CI will have access
 }
 ---
 <ProjectsLayout stats={stats} categories={categories}>
@@ -120,10 +76,23 @@ try {
     ))}
   </section>
 
-  <section class="maintainers-section">
-    <h2 class="section-heading">Project Maintainers</h2>
-    <div class="maintainers-scroll">
-      {maintainers.map(m => <ProjectMaintainerCard maintainer={m} />)}
+  <section class="staff-support-section">
+    <h2 class="staff-support-heading">CNCF Staff providing Support</h2>
+    <div class="staff-support-list">
+      {staffList.map(m => (
+        <a href={m.handle ? `https://github.com/${m.handle}` : '#'} target="_blank" rel="noopener noreferrer" class="staff-support-card">
+          <img
+            src={m.handle ? `https://avatars.githubusercontent.com/${m.handle}` : (m.imageUrl ?? '')}
+            alt={m.name}
+            class="staff-support-avatar"
+            loading="lazy"
+          />
+          <div class="staff-support-info">
+            <span class="staff-support-name">{m.name}</span>
+            {m.handle && <span class="staff-support-handle">@{m.handle}</span>}
+          </div>
+        </a>
+      ))}
     </div>
   </section>
 
@@ -243,6 +212,15 @@ try {
   loadProjects().then(() => renderCurrentView());
 
   function showHeroesForTab(tab: string) {
+    const heroesSection = document.querySelector<HTMLElement>('.heroes-section');
+    const staffSection = document.querySelector<HTMLElement>('.staff-support-section, .maintainers-section');
+    if (tab === 'archived') {
+      if (heroesSection) heroesSection.style.display = 'none';
+      if (staffSection) staffSection.style.display = 'none';
+      return;
+    }
+    if (heroesSection) heroesSection.style.display = '';
+    if (staffSection) staffSection.style.display = '';
     const heroKey = ['graduated','incubating','sandbox'].includes(tab) ? tab : 'everyone';
     document.querySelectorAll<HTMLElement>('.heroes-grid[data-heroes-tab]').forEach(grid => {
       grid.style.display = grid.dataset.heroesTab === heroKey ? 'grid' : 'none';
@@ -418,4 +396,45 @@ try {
     outline: 2px solid var(--color-accent-emphasis);
     outline-offset: 2px;
   }
+
+  .staff-support-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border-default);
+  }
+  .staff-support-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+  }
+  .staff-support-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .staff-support-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--color-text-primary);
+    transition: border-color 0.15s;
+  }
+  .staff-support-card:hover { border-color: var(--color-accent-emphasis); }
+  .staff-support-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .staff-support-info { display: flex; flex-direction: column; gap: 0.1rem; }
+  .staff-support-name  { font-size: 0.875rem; font-weight: 600; }
+  .staff-support-handle { font-size: 0.75rem; color: var(--color-text-secondary); }
 </style>

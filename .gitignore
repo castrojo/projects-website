@@ -24,7 +24,8 @@ pnpm-debug.log*
 .idea/
 
 # project-specific
-src/data/
+src/data/*
+!src/data/staff-support.json
 public/data/
 .sync-cache/
 projects-go/projects

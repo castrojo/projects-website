@@ -84,9 +84,10 @@ test.describe('visual layout verification', () => {
     expect(cardsContainer!.flexDirection).toBe('column');
   });
 
-  test('maintainers section renders with cards', async ({ page }) => {
-    const section = page.locator('.maintainers-section');
-    await expect(section).toBeVisible();
+  test('staff-support section is visible with cards', async ({ page }) => {
+    await page.goto('./');
+    await expect(page.locator('.staff-support-section')).toBeVisible();
+    await expect(page.locator('.staff-support-card').first()).toBeVisible();
   });
 
   test('project cards use letterbox layout', async ({ page }) => {
