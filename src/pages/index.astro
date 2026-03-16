@@ -300,8 +300,18 @@ function formatNumber(n: number): string {
       return false;
     },
     onResetFocus: resetFocus,
-    onSitePrev: () => { window.location.href = 'https://castrojo.github.io/people-website/'; },
-    onSiteNext: () => { window.location.href = 'https://castrojo.github.io/endusers-website/'; },
+    onSitePrev: () => {
+      const isLocal = window.location.hostname === 'localhost';
+      window.location.href = isLocal
+        ? 'http://localhost:4323/people-website/'
+        : 'https://castrojo.github.io/people-website/';
+    },
+    onSiteNext: () => {
+      const isLocal = window.location.hostname === 'localhost';
+      window.location.href = isLocal
+        ? 'http://localhost:4324/endusers-website/'
+        : 'https://castrojo.github.io/endusers-website/';
+    },
   });
 
   document.getElementById('help-button')?.addEventListener('click', () => {
