@@ -39,7 +39,7 @@ const banners = await getActiveBanners();
         <img src={`${base}/cncf-icon-white.svg`} alt="CNCF" class="site-logo logo-dark" width="36" height="36" />
         <div class="site-title-group">
           <h1>Indie Cloud Native</h1>
-          <p class="site-subtitle">Built for the love of the game</p>
+          <p class="site-subtitle" id="rotating-slogan" aria-live="polite">Built for the love of the game</p>
         </div>
         <SiteSwitcher activeSite="projects" />
       </div>
@@ -96,6 +96,32 @@ const banners = await getActiveBanners();
   <KeyboardHelp />
 </body>
 </html>
+
+<script>
+  const SLOGANS = [
+    "Built for the love of the game",
+    "Welcome to indie cloud native",
+    "Built for the love of the game. Welcome to indie cloud native",
+    "Discover the CNCF cloud native ecosystem",
+    "Community-driven, community-powered",
+  ];
+  const slogan = document.getElementById('rotating-slogan');
+  if (slogan) {
+    let idx = 0;
+    setInterval(() => {
+      slogan.classList.add('fade');
+      setTimeout(() => {
+        idx = (idx + 1) % SLOGANS.length;
+        slogan.textContent = SLOGANS[idx];
+        slogan.classList.remove('fade');
+      }, 600);
+    }, 12000);
+  }
+</script>
+<style>
+  #rotating-slogan { transition: opacity 0.6s ease; }
+  #rotating-slogan.fade { opacity: 0; }
+</style>
 
 <style>
   @import '../styles/variables.css';
