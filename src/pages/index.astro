@@ -106,9 +106,7 @@ function formatNumber(n: number): string {
     <Fragment set:html={firstBatch.map(renderCard).join('')} />
   </div>
 
-  <div id="archived-container" style="display:none">
-    <p class="archived-subtitle">For every gardener, a winnower</p>
-  </div>
+  <div id="archived-container" style="display:none"></div>
   <div id="no-results" class="empty-state" style="display:none">No projects match your search.</div>
 </ProjectsLayout>
 
@@ -132,6 +130,7 @@ function formatNumber(n: number): string {
     const res = await fetch(`${base}/data/projects.json`);
     if (!res.ok) return;
     allProjects = await res.json();
+    archivedRendered = false;  // reset so archived tab re-renders with real data if clicked early
     initSearch(allProjects);
   }
 
@@ -145,9 +144,7 @@ function formatNumber(n: number): string {
       archivedContainer.style.display = 'block';
       if (!archivedRendered) {
         const archived = allProjects.filter(p => p.maturity === 'archived');
-        const subtitle = archivedContainer.querySelector('.archived-subtitle');
         archivedContainer.innerHTML = renderTimeline(archived);
-        if (subtitle) archivedContainer.insertBefore(subtitle, archivedContainer.firstChild);
         archivedRendered = true;
       }
       return;

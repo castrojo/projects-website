@@ -92,12 +92,14 @@ export function renderCard(p: SafeProject): string {
 
   const auditHtml = p.lastAuditDate ? `<span class="audit-badge" title="Last audit: ${escHtml(p.lastAuditDate)}${p.lastAuditVendor ? ' by ' + escHtml(p.lastAuditVendor) : ''}">Audited</span>` : '';
 
-  const activityHtml = p.lastCommitDate ? `<span style="color:var(--color-text-muted);font-size:0.8rem">${formatRelativeDate(p.lastCommitDate)}</span>` : '';
+  const activityHtml = p.lastCommitDate ? `<span class="activity-item" style="color:var(--color-text-muted);font-size:0.8rem">${formatRelativeDate(p.lastCommitDate)}</span>` : '';
 
   const links: string[] = [];
   if (p.repoUrl) links.push(`<a class="card-link" href="${escHtml(p.repoUrl)}" target="_blank" rel="noopener">GitHub</a>`);
   if (p.homepageUrl) links.push(`<a class="card-link" href="${escHtml(p.homepageUrl)}" target="_blank" rel="noopener">Website</a>`);
   if (p.devStatsUrl) links.push(`<a class="card-link" href="${escHtml(p.devStatsUrl)}" target="_blank" rel="noopener">DevStats</a>`);
+  if (p.blogUrl) links.push(`<a class="card-link" href="${escHtml(p.blogUrl)}" target="_blank" rel="noopener">Blog</a>`);
+  if (p.twitterUrl) links.push(`<a class="card-link" href="${escHtml(p.twitterUrl)}" target="_blank" rel="noopener">Twitter</a>`);
   if (p.slackUrl) links.push(`<a class="card-link" href="${escHtml(p.slackUrl)}" target="_blank" rel="noopener">Slack</a>`);
 
   const logoHtml = p.logoUrl
@@ -129,7 +131,7 @@ export function renderCard(p: SafeProject): string {
       <div class="letterbox-footer" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-top:0.375rem;font-size:0.8rem">
         ${statsHtml}
         <span style="color:var(--color-text-muted)">${escHtml(p.category)}${p.subcategory ? ' > ' + escHtml(p.subcategory) : ''}</span>
-        ${activityHtml}
+        ${activityHtml ? `<div class="card-activity">${activityHtml}</div>` : ''}
       </div>
       ${links.length ? `<div class="card-links" style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.375rem">${links.join('')}</div>` : ''}
     </div>

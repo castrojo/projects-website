@@ -14,7 +14,7 @@ interface KeyboardOptions {
   onPageUp: () => void;
   onTabCycle: (reverse: boolean) => void;
   onOpen: () => boolean;
-  onResetFocus: () => void;
+  onResetFocus?: () => void;
   onSitePrev?: () => void;
   onSiteNext?: () => void;
 }
@@ -42,7 +42,7 @@ export function initKeyboard(opts: KeyboardOptions): void {
     if (e.key === 'Escape') {
       opts.onEscape();
       active?.blur();
-      opts.onResetFocus();
+      opts.onResetFocus?.();
       return;
     }
 
