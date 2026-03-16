@@ -6,6 +6,8 @@
   --color-text-primary: #24292f;
   --color-text-secondary: #57606a;
   --color-text-muted: #8c959f;
+  --color-text-tertiary: #6e7781;
+  --color-accent-emphasis: #0969da;
   --color-cncf-blue: #0086FF;
   --color-rss-orange: #f26522;
 
@@ -23,6 +25,8 @@
   --color-text-primary: #e6edf3;
   --color-text-secondary: #8b949e;
   --color-text-muted: #6e7681;
+  --color-text-tertiary: #8b949e;
+  --color-accent-emphasis: #2f81f7;
   --color-cncf-blue: #58a6ff;
   --color-rss-orange: #f26522;
 }

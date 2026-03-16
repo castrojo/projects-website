@@ -51,20 +51,20 @@ const banners = await getActiveBanners();
         <div class="header-left">
           <div class="logo-title">
             <span class="cncf-logo-wrapper" aria-hidden="true">
-              <img src={`${base}/cncf-icon-color.svg`} alt="CNCF" class="logo-light" width="56" height="56" />
-              <img src={`${base}/cncf-icon-white.svg`} alt="CNCF" class="logo-dark" width="56" height="56" />
+              <img src={`${base}/cncf-icon-color.svg`} alt="CNCF" class="logo-light" width="42" height="42" />
+              <img src={`${base}/cncf-icon-white.svg`} alt="CNCF" class="logo-dark" width="42" height="42" />
             </span>
             <div class="title-block">
               <h1 class="site-title"><a href={base || '/'} class="home-link">CNCF Projects</a></h1>
-              <p class="site-subtitle" id="rotating-slogan" aria-live="polite">Built for the love of the game</p>
             </div>
           </div>
-          <div class="nav-group">
-            <SiteSwitcher activeSite="projects" />
-            <div class="search-wrapper">
-              <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
-              <span class="search-count" id="search-count"></span>
-            </div>
+        </div>
+        <div class="nav-group">
+          <SiteSwitcher activeSite="projects" />
+          <div class="search-wrapper">
+            <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
+            <span class="search-count" id="search-count"></span>
+            <button id="search-clear" class="search-clear" aria-label="Clear search" title="Clear search">✕</button>
           </div>
         </div>
         <div class="header-actions">
@@ -85,6 +85,15 @@ const banners = await getActiveBanners();
   <main class="container">
     <div class="page-layout">
       <aside class="sidebar">
+      <InfoBox
+        title="About our Projects"
+        description="CNCF projects powering cloud native infrastructure worldwide."
+        links={[
+          { text: "RSS Feed", url: `${base}/feed.xml`, rss: true },
+          { text: "CNCF Landscape", url: "https://landscape.cncf.io", external: true },
+          { text: "People Site", url: "https://castrojo.github.io/people-website/", external: true },
+        ]}
+      />
       {stats && (
         <div class="stats-box">
           <h2 class="sidebar-heading">Projects</h2>
@@ -107,15 +116,6 @@ const banners = await getActiveBanners();
           </select>
         </div>
       )}
-      <InfoBox
-        title="About"
-        description="CNCF projects powering cloud native infrastructure worldwide."
-        links={[
-          { text: "RSS Feed", url: `${base}/feed.xml`, rss: true },
-          { text: "CNCF Landscape", url: "https://landscape.cncf.io", external: true },
-          { text: "People Site", url: "https://castrojo.github.io/people-website/", external: true },
-        ]}
-      />
       {banners.length > 0 && <KubeConBanner banners={banners} />}
     </aside>
       <div class="main-content">
@@ -134,30 +134,20 @@ const banners = await getActiveBanners();
 </html>
 
 <script>
-  const SLOGANS = [
-    "Built for the love of the game",
-    "Welcome to indie cloud native",
-    "Built for the love of the game. Welcome to indie cloud native",
-    "Discover the CNCF cloud native ecosystem",
-    "Community-driven, community-powered",
-  ];
-  const slogan = document.getElementById('rotating-slogan');
-  if (slogan) {
-    let idx = 0;
-    setInterval(() => {
-      slogan.classList.add('fade');
-      setTimeout(() => {
-        idx = (idx + 1) % SLOGANS.length;
-        slogan.textContent = SLOGANS[idx];
-        slogan.classList.remove('fade');
-      }, 600);
-    }, 12000);
+  const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+  const searchClear = document.getElementById('search-clear') as HTMLButtonElement | null;
+  if (searchInput && searchClear) {
+    searchInput.addEventListener('input', () => {
+      searchClear.style.display = searchInput.value ? 'flex' : 'none';
+    });
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClear.style.display = 'none';
+      searchInput.dispatchEvent(new Event('input'));
+      searchInput.focus();
+    });
   }
 </script>
-<style>
-  #rotating-slogan { transition: opacity 0.6s ease; }
-  #rotating-slogan.fade { opacity: 0; }
-</style>
 
 <style is:global>
   @import '../styles/variables.css';
@@ -165,11 +155,8 @@ const banners = await getActiveBanners();
 
   .logo-light { display: block; }
   .logo-dark  { display: none; }
-  .cncf-logo-wrapper .logo-dark { display: none; }
   [data-theme="dark"] .logo-light { display: none; }
   [data-theme="dark"] .logo-dark  { display: block; }
-  [data-theme="dark"] .cncf-logo-wrapper .logo-light { display: none; }
-  [data-theme="dark"] .cncf-logo-wrapper .logo-dark { display: block; }
 
   .icon-button {
     background: none;
@@ -209,8 +196,6 @@ const banners = await getActiveBanners();
   .stat-incubating .stat-value { color: var(--color-incubating, #0086FF); }
   .stat-sandbox .stat-value { color: var(--color-sandbox, #8b949e); }
   .stat-archived .stat-value { color: var(--color-archived, #6b7280); }
-
-  .search-count { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--color-text-muted); pointer-events: none; }
 
   .filter-box {
     background: var(--color-bg-default);
