@@ -90,11 +90,18 @@ test.describe('visual layout verification', () => {
     await expect(page.locator('.staff-support-card').first()).toBeVisible();
   });
 
-  test('project cards use letterbox layout', async ({ page }) => {
-    await page.waitForTimeout(1000);
-    const firstCard = page.locator('.project-card').first();
-    await expect(firstCard).toBeVisible();
-    const display = await firstCard.evaluate(el => getComputedStyle(el).flexDirection);
-    expect(display).toBe('row');
+  test('archived tab hides heroes and staff, shows timeline', async ({ page }) => {
+    await page.goto('./');
+    await page.click('.section-link[data-tab="archived"]');
+    await page.waitForTimeout(300);
+    // Heroes section must be hidden
+    const heroesVisible = await page.locator('.heroes-section').isVisible();
+    expect(heroesVisible).toBe(false);
+    // Staff section must be hidden
+    const staffVisible = await page.locator('.staff-support-section').isVisible();
+    expect(staffVisible).toBe(false);
+    // Timeline container must be visible
+    const timelineVisible = await page.locator('.timeline-container').isVisible();
+    expect(timelineVisible).toBe(true);
   });
 });
