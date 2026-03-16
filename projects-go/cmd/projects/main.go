@@ -55,6 +55,21 @@ func main() {
 	if err := writer.WriteChangelog(events, changelogPath); err != nil {
 		log.Fatalf("writing changelog: %v", err)
 	}
+
+	// Fetch LWCN newsletter events (non-fatal)
+	fmt.Println("Fetching LWCN newsletter feed...")
+	lwcnEvents, lwcnErr := fetcher.FetchLWCN(result.Projects)
+	if lwcnErr != nil {
+		log.Printf("LWCN fetch warning (non-fatal): %v", lwcnErr)
+	} else if len(lwcnEvents) > 0 {
+		fmt.Printf("Fetched %d LWCN newsletter events\n", len(lwcnEvents))
+		if err := writer.WriteChangelog(lwcnEvents, changelogPath); err != nil {
+			log.Printf("LWCN changelog write warning (non-fatal): %v", err)
+		}
+	} else {
+		fmt.Println("LWCN feed unchanged or no new events")
+	}
+
 	if err := writer.WriteProjects(result.Projects, updatedAt); err != nil {
 		log.Fatalf("writing projects: %v", err)
 	}

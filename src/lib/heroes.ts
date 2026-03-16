@@ -27,10 +27,18 @@ export interface HeroSets {
 }
 
 export function selectHeroSets(projects: SafeProject[]): HeroSets {
+  const graduated  = projects.filter(p => p.maturity === 'graduated');
+  const incubating = projects.filter(p => p.maturity === 'incubating');
+  const sandbox    = projects.filter(p => p.maturity === 'sandbox');
   return {
-    everyone:   heroSlots(projects.filter(p => p.maturity !== 'archived')),
-    graduated:  heroSlots(projects.filter(p => p.maturity === 'graduated')),
-    incubating: heroSlots(projects.filter(p => p.maturity === 'incubating')),
-    sandbox:    heroSlots(projects.filter(p => p.maturity === 'sandbox')),
+    // Everyone: row 1 = 4 graduated, row 2 = 3 incubating + 1 sandbox
+    everyone: [
+      ...heroSlots(graduated, 4),
+      ...heroSlots(incubating, 3),
+      ...heroSlots(sandbox, 1),
+    ],
+    graduated:  heroSlots(graduated),
+    incubating: heroSlots(incubating),
+    sandbox:    heroSlots(sandbox),
   };
 }

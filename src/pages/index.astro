@@ -1,6 +1,6 @@
 ---
 import ProjectsLayout from '../layouts/ProjectsLayout.astro';
-import { renderCard, formatRelativeDate } from '../lib/project-renderer';
+import { formatRelativeDate } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
 import { selectHeroSets } from '../lib/heroes';
 import staffSupportData from '../data/staff-support.json';
@@ -34,9 +34,6 @@ const heroSets = selectHeroSets(projects);
 const MATURITY_COLORS: Record<string, string> = {
   graduated: '#FFB300', incubating: '#0086FF', sandbox: '#8b949e', archived: '#6b7280',
 };
-const STATIC_COUNT = 30;
-const activeProjects = projects.filter(p => p.maturity !== 'archived');
-const firstBatch = activeProjects.slice(0, STATIC_COUNT);
 
 function formatNumber(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
@@ -105,9 +102,11 @@ function formatNumber(n: number): string {
     </div>
   )}
 
-  <div id="cards-container" class="cards-list" data-tab="everyone">
-    <Fragment set:html={firstBatch.map(renderCard).join('')} />
-  </div>
+  <!-- LWCN newsletter section — visible only on Everyone tab -->
+  <div id="lwcn-container" style="display:none"></div>
+
+  <h2 id="changelog-heading" class="changelog-heading">Changelog</h2>
+  <div id="cards-container" class="cards-list" data-tab="everyone"></div>
 
   <div id="archived-container" style="display:none"></div>
   <div id="no-results" class="empty-state" style="display:none">No projects match your search.</div>
@@ -115,15 +114,16 @@ function formatNumber(n: number): string {
 
 <script>
   import type { SafeProject } from '../lib/project-renderer';
-  import { renderCard } from '../lib/project-renderer';
   import { renderTimeline } from '../lib/archived-timeline';
-  import { initTabs, filterByTab, type TabId } from '../lib/tabs';
+  import { initTabs, filterByTab, filterChangelogByTab, type TabId, type ChangelogEvent } from '../lib/tabs';
+  import { renderChangelogEvent, renderNewsletterItem } from '../lib/changelog-renderer';
   import { initSearch, searchProjects } from '../lib/search';
   import { initKeyboard, tabFromNumber } from '../lib/keyboard';
   import { fireFountain, preloadOnHover, fireHearts } from '../lib/confetti';
 
   const base = import.meta.env.BASE_URL;
   let allProjects: SafeProject[] = [];
+  let allChangelog: ChangelogEvent[] = [];
   let currentQuery = '';
   let currentTab: TabId = 'everyone';
   let currentCategory = '';
@@ -133,18 +133,28 @@ function formatNumber(n: number): string {
     const res = await fetch(`${base}/data/projects.json`);
     if (!res.ok) return;
     allProjects = await res.json();
-    archivedRendered = false;  // reset so archived tab re-renders with real data if clicked early
+    archivedRendered = false;
     initSearch(allProjects);
+  }
+
+  async function loadChangelog(): Promise<void> {
+    const res = await fetch(`${base}/data/changelog.json`);
+    if (!res.ok) return;
+    allChangelog = await res.json();
   }
 
   function renderCurrentView(): void {
     const container = document.getElementById('cards-container')!;
     const archivedContainer = document.getElementById('archived-container')!;
+    const lwcnContainer = document.getElementById('lwcn-container')!;
+    const changelogHeading = document.getElementById('changelog-heading');
     const noResults = document.getElementById('no-results')!;
 
     if (currentTab === 'archived') {
       container.style.display = 'none';
       archivedContainer.style.display = 'block';
+      lwcnContainer.style.display = 'none';
+      if (changelogHeading) changelogHeading.style.display = 'none';
       if (!archivedRendered) {
         const archived = allProjects.filter(p => p.maturity === 'archived');
         archivedContainer.innerHTML = renderTimeline(archived);
@@ -155,29 +165,59 @@ function formatNumber(n: number): string {
 
     container.style.display = '';
     archivedContainer.style.display = 'none';
+    if (changelogHeading) changelogHeading.style.display = '';
 
-    let projects = filterByTab(allProjects, currentTab);
+    // Resolve which changelog events to show
+    let events = filterChangelogByTab(allChangelog, currentTab);
+
+    // Apply category filter (project events only — match via projectSlug → project category)
     if (currentCategory) {
-      projects = projects.filter(p => p.category === currentCategory);
+      const slugsInCategory = new Set(
+        allProjects.filter(p => p.category === currentCategory).map(p => p.slug)
+      );
+      events = events.filter(e =>
+        e.type === 'newsletter' || slugsInCategory.has(e.projectSlug ?? '')
+      );
     }
+
+    // Apply search filter (match against allProjects, then filter events by slug)
     if (currentQuery) {
       const results = searchProjects(currentQuery);
-      const slugs = new Set(results.map(r => r.slug));
-      projects = projects.filter(p => slugs.has(p.slug));
+      const matchedSlugs = new Set(results.map(r => r.slug));
+      events = events.filter(e =>
+        e.type === 'newsletter' || matchedSlugs.has(e.projectSlug ?? '')
+      );
     }
 
-    const hasResults = projects.length > 0;
-    noResults.style.display = hasResults ? 'none' : 'block';
-    container.innerHTML = hasResults ? projects.map(renderCard).join('') : '';
+    // Everyone tab: LWCN newsletters at top, project events below
+    if (currentTab === 'everyone') {
+      const newsletters = events.filter(e => e.type === 'newsletter');
+      const projectEvents = events.filter(e => e.type !== 'newsletter');
+      if (newsletters.length > 0) {
+        lwcnContainer.style.display = '';
+        lwcnContainer.innerHTML = newsletters.map(renderNewsletterItem).join('');
+      } else {
+        lwcnContainer.style.display = 'none';
+      }
+      const hasResults = projectEvents.length > 0;
+      noResults.style.display = hasResults ? 'none' : 'block';
+      container.innerHTML = hasResults ? projectEvents.map(renderChangelogEvent).join('') : '';
+    } else {
+      lwcnContainer.style.display = 'none';
+      const hasResults = events.length > 0;
+      noResults.style.display = hasResults ? 'none' : 'block';
+      container.innerHTML = hasResults ? events.map(renderChangelogEvent).join('') : '';
+    }
+
     const countEl = document.getElementById('search-count');
     if (countEl) {
-      countEl.textContent = currentQuery ? String(projects.length) : '';
+      countEl.textContent = currentQuery ? String(events.filter(e => e.type !== 'newsletter').length) : '';
     }
     wireCardEvents();
   }
 
   function wireCardEvents(): void {
-    document.querySelectorAll<HTMLElement>('.project-card').forEach(card => {
+    document.querySelectorAll<HTMLElement>('.changelog-event-card, .newsletter-card').forEach(card => {
       preloadOnHover(card);
       card.addEventListener('click', () => fireFountain(card));
     });
@@ -187,9 +227,9 @@ function formatNumber(n: number): string {
     });
   }
 
-  // Card focus via CSS class (matches people-website approach)
+  // Card focus via CSS class
   const visibleCards = () =>
-    Array.from(document.querySelectorAll<HTMLElement>('.project-card, .hero-card'))
+    Array.from(document.querySelectorAll<HTMLElement>('.changelog-event-card, .newsletter-card, .hero-card'))
       .filter(c => c.offsetParent !== null && c.style.display !== 'none');
 
   let focusedIdx = -1;
@@ -213,18 +253,21 @@ function formatNumber(n: number): string {
     }
   }
 
-  loadProjects().then(() => renderCurrentView());
+  Promise.all([loadProjects(), loadChangelog()]).then(() => renderCurrentView());
 
   function showHeroesForTab(tab: string) {
     const heroesSection = document.querySelector<HTMLElement>('.heroes-section');
     const staffSection = document.querySelector<HTMLElement>('.staff-support-section, .maintainers-section');
+    const changelogHeading = document.getElementById('changelog-heading');
     if (tab === 'archived') {
       if (heroesSection) heroesSection.style.display = 'none';
       if (staffSection) staffSection.style.display = 'none';
+      if (changelogHeading) changelogHeading.style.display = 'none';
       return;
     }
     if (heroesSection) heroesSection.style.display = '';
     if (staffSection) staffSection.style.display = '';
+    if (changelogHeading) changelogHeading.style.display = '';
     const heroKey = ['graduated','incubating','sandbox'].includes(tab) ? tab : 'everyone';
     document.querySelectorAll<HTMLElement>('.heroes-grid[data-heroes-tab]').forEach(grid => {
       grid.style.display = grid.dataset.heroesTab === heroKey ? 'grid' : 'none';
@@ -324,6 +367,26 @@ function formatNumber(n: number): string {
 
 <style is:global>
   @import '../styles/cards.css';
+
+  .changelog-heading {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+
+  #lwcn-container {
+    margin-bottom: 1rem;
+  }
+
+  .changelog-event-card.keyboard-focused,
+  .newsletter-card.keyboard-focused,
+  .hero-card.keyboard-focused {
+    outline: 2px solid var(--color-accent-emphasis);
+    outline-offset: 2px;
+  }
 
   .archived-subtitle {
     font-size: 0.9375rem;
@@ -429,11 +492,7 @@ function formatNumber(n: number): string {
     -webkit-box-orient: vertical;
   }
 
-  .project-card.keyboard-focused,
-  .hero-card.keyboard-focused {
-    outline: 2px solid var(--color-accent-emphasis);
-    outline-offset: 2px;
-  }
+  /* keyboard-focused handled in .changelog-heading block above */
 
   .staff-support-section {
     margin-top: 2rem;

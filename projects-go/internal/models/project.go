@@ -116,17 +116,29 @@ type SafeProject struct {
 	UpdatedAt       string   `json:"updatedAt"`
 }
 
+// MentionedProject is a CNCF project referenced in a newsletter event
+type MentionedProject struct {
+	Name    string `json:"name"`
+	Slug    string `json:"slug"`
+	LogoURL string `json:"logoUrl"`
+	Maturity string `json:"maturity"`
+}
+
 // Event is a changelog entry
 type Event struct {
 	ID          string `json:"id"`
-	Type        string `json:"type"` // accepted|promoted|archived|updated|removed
-	ProjectName string `json:"projectName"`
-	ProjectSlug string `json:"projectSlug"`
+	Type        string `json:"type"` // accepted|promoted|archived|updated|removed|newsletter
+	ProjectName string `json:"projectName,omitempty"`
+	ProjectSlug string `json:"projectSlug,omitempty"`
 	LogoURL     string `json:"logoUrl"`
-	Maturity    string `json:"maturity"`
+	Maturity    string `json:"maturity,omitempty"`
 	OldMaturity string `json:"oldMaturity,omitempty"`
 	Timestamp   string `json:"timestamp"`
 	Description string `json:"description"`
+	// LWCN newsletter-specific fields
+	LWCNIssueURL      string             `json:"lwcnIssueUrl,omitempty"`
+	LWCNTitle         string             `json:"lwcnTitle,omitempty"`
+	MentionedProjects []MentionedProject `json:"mentionedProjects,omitempty"`
 }
 
 // Slugify converts a project name to a URL-safe slug
