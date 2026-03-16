@@ -51,17 +51,37 @@ test.describe('visual layout verification', () => {
     }
   });
 
-  test('cards-grid uses multi-column grid layout', async ({ page }) => {
-    const cardsGrid = await page.evaluate(() => {
-      const grid = document.querySelector('.cards-grid, #cards-container');
-      if (!grid) return null;
-      const cs = getComputedStyle(grid);
-      return { display: cs.display, cols: cs.gridTemplateColumns };
+  test('cards-container uses flex column layout for letterbox cards', async ({ page }) => {
+    const cardsContainer = await page.evaluate(() => {
+      const el = document.querySelector('#cards-container');
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      return { display: cs.display, flexDirection: cs.flexDirection };
     });
-    expect(cardsGrid).not.toBeNull();
-    expect(cardsGrid!.display).toBe('grid');
-    // cards-grid should have 2+ columns (auto-fill, minmax(300px, 1fr))
-    const colCount = cardsGrid!.cols.split(' ').length;
-    expect(colCount).toBeGreaterThanOrEqual(2);
+    expect(cardsContainer).not.toBeNull();
+    expect(cardsContainer!.display).toBe('flex');
+    expect(cardsContainer!.flexDirection).toBe('column');
+  });
+
+  test('hero cards have visual design (not identical style)', async ({ page }) => {
+    const heroCards = page.locator('.hero-card');
+    await expect(heroCards).toHaveCount(4);
+    const labels = await heroCards.locator('.hero-label').allTextContents();
+    expect(labels).toContain('Graduated');
+    expect(labels).toContain('Incubating');
+    expect(labels).toContain('Sandbox');
+  });
+
+  test('maintainers section renders with cards', async ({ page }) => {
+    const section = page.locator('.maintainers-section');
+    await expect(section).toBeVisible();
+  });
+
+  test('project cards use letterbox layout', async ({ page }) => {
+    await page.waitForTimeout(1000);
+    const firstCard = page.locator('.project-card').first();
+    await expect(firstCard).toBeVisible();
+    const display = await firstCard.evaluate(el => getComputedStyle(el).flexDirection);
+    expect(display).toBe('row');
   });
 });

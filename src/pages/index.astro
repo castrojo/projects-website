@@ -3,6 +3,8 @@ import ProjectsLayout from '../layouts/ProjectsLayout.astro';
 import { renderCard } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
 import { selectHeroes } from '../lib/heroes';
+import ProjectMaintainerCard from '../components/ProjectMaintainerCard.astro';
+import type { ProjectMaintainer } from '../components/ProjectMaintainerCard.astro';
 import fs from 'node:fs';
 
 const base = import.meta.env.BASE_URL;
@@ -34,66 +36,120 @@ function formatNumber(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
   return String(n);
 }
+
+// Fetch and parse CNCF project maintainers CSV at build time
+const MATURITY_ORDER: Record<string, number> = { Graduated: 3, Incubating: 2, Sandbox: 1 };
+
+let maintainers: ProjectMaintainer[] = [];
+try {
+  const res = await fetch('https://raw.githubusercontent.com/cncf/foundation/main/project-maintainers.csv');
+  if (res.ok) {
+    const text = await res.text();
+    const lines = text.split('\n').filter(l => l.trim());
+    // skip header row
+    const byHandle = new Map<string, { name: string; handle: string; projects: string[]; maturityScore: number; maturity: string }>();
+    for (const line of lines.slice(1)) {
+      // CSV: Maturity,Project,Name,GitHub Handle,CNCFAssociated,Email
+      const cols = line.split(',');
+      if (cols.length < 4) continue;
+      const maturity = cols[0]?.trim() ?? '';
+      const project = cols[1]?.trim() ?? '';
+      const name = cols[2]?.trim() ?? '';
+      const handle = cols[3]?.trim().replace(/^@/, '') ?? '';
+      // never expose email (cols[5])
+      if (!handle || !name) continue;
+      const score = MATURITY_ORDER[maturity] ?? 0;
+      if (!byHandle.has(handle)) {
+        byHandle.set(handle, { name, handle, projects: [], maturityScore: score, maturity });
+      }
+      const entry = byHandle.get(handle)!;
+      if (project && !entry.projects.includes(project)) entry.projects.push(project);
+      if (score > entry.maturityScore) {
+        entry.maturityScore = score;
+        entry.maturity = maturity;
+      }
+    }
+    maintainers = [...byHandle.values()]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 30)
+      .map(m => ({
+        name: m.name,
+        handle: m.handle,
+        projects: m.projects,
+        maturity: m.maturity,
+        avatarUrl: `https://avatars.githubusercontent.com/${m.handle}?s=128`,
+      }));
+  }
+} catch {
+  // network unavailable at build time — CI will have access
+}
 ---
 <ProjectsLayout stats={stats} categories={categories}>
   <section class="heroes-section">
     <div class="heroes-grid">
       {heroes.graduated && (
         <div class="hero-card" style="--card-accent: #FFB300" data-slug={heroes.graduated.slug}>
-          {heroes.graduated.logoUrl && <img src={heroes.graduated.logoUrl} alt={`${heroes.graduated.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-label" style="background: #FFB300">Graduated</div>
+          {heroes.graduated.logoUrl && <img src={heroes.graduated.logoUrl} alt={`${heroes.graduated.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
           <div class="hero-content">
-            <div class="hero-label" style="background: #FFB300">Graduated</div>
             <a class="hero-name" href={heroes.graduated.homepageUrl || heroes.graduated.repoUrl || '#'} target="_blank" rel="noopener">{heroes.graduated.name}</a>
-            {heroes.graduated.description && <p class="hero-description">{heroes.graduated.description.slice(0, 100)}{heroes.graduated.description.length > 100 ? '...' : ''}</p>}
             <div class="hero-meta">
               {heroes.graduated.stars ? <span class="hero-stat">{formatNumber(heroes.graduated.stars)} stars</span> : null}
-              <span class="hero-category">{heroes.graduated.category}</span>
+              {heroes.graduated.contributors ? <span>{formatNumber(heroes.graduated.contributors)} contribs</span> : null}
             </div>
+            <span class="hero-category">{heroes.graduated.category}</span>
           </div>
         </div>
       )}
       {heroes.incubating && (
         <div class="hero-card" style="--card-accent: #0086FF" data-slug={heroes.incubating.slug}>
-          {heroes.incubating.logoUrl && <img src={heroes.incubating.logoUrl} alt={`${heroes.incubating.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-label" style="background: #0086FF">Incubating</div>
+          {heroes.incubating.logoUrl && <img src={heroes.incubating.logoUrl} alt={`${heroes.incubating.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
           <div class="hero-content">
-            <div class="hero-label" style="background: #0086FF">Incubating</div>
             <a class="hero-name" href={heroes.incubating.homepageUrl || heroes.incubating.repoUrl || '#'} target="_blank" rel="noopener">{heroes.incubating.name}</a>
-            {heroes.incubating.description && <p class="hero-description">{heroes.incubating.description.slice(0, 100)}{heroes.incubating.description.length > 100 ? '...' : ''}</p>}
             <div class="hero-meta">
               {heroes.incubating.stars ? <span class="hero-stat">{formatNumber(heroes.incubating.stars)} stars</span> : null}
-              <span class="hero-category">{heroes.incubating.category}</span>
+              {heroes.incubating.contributors ? <span>{formatNumber(heroes.incubating.contributors)} contribs</span> : null}
             </div>
+            <span class="hero-category">{heroes.incubating.category}</span>
           </div>
         </div>
       )}
       {heroes.sandbox && (
         <div class="hero-card" style="--card-accent: #8b949e" data-slug={heroes.sandbox.slug}>
-          {heroes.sandbox.logoUrl && <img src={heroes.sandbox.logoUrl} alt={`${heroes.sandbox.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-label" style="background: #8b949e">Sandbox</div>
+          {heroes.sandbox.logoUrl && <img src={heroes.sandbox.logoUrl} alt={`${heroes.sandbox.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
           <div class="hero-content">
-            <div class="hero-label" style="background: #8b949e">Sandbox</div>
             <a class="hero-name" href={heroes.sandbox.homepageUrl || heroes.sandbox.repoUrl || '#'} target="_blank" rel="noopener">{heroes.sandbox.name}</a>
-            {heroes.sandbox.description && <p class="hero-description">{heroes.sandbox.description.slice(0, 100)}{heroes.sandbox.description.length > 100 ? '...' : ''}</p>}
             <div class="hero-meta">
               {heroes.sandbox.stars ? <span class="hero-stat">{formatNumber(heroes.sandbox.stars)} stars</span> : null}
-              <span class="hero-category">{heroes.sandbox.category}</span>
+              {heroes.sandbox.contributors ? <span>{formatNumber(heroes.sandbox.contributors)} contribs</span> : null}
             </div>
+            <span class="hero-category">{heroes.sandbox.category}</span>
           </div>
         </div>
       )}
       {heroes.recentlyAccepted && (
         <div class="hero-card" style="--card-accent: #00A86B" data-slug={heroes.recentlyAccepted.slug}>
-          {heroes.recentlyAccepted.logoUrl && <img src={heroes.recentlyAccepted.logoUrl} alt={`${heroes.recentlyAccepted.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-label" style="background: #00A86B">Recently Accepted</div>
+          {heroes.recentlyAccepted.logoUrl && <img src={heroes.recentlyAccepted.logoUrl} alt={`${heroes.recentlyAccepted.name} logo`} class="hero-logo" width="96" height="96" loading="lazy" style="width:96px;height:96px;object-fit:contain" />}
           <div class="hero-content">
-            <div class="hero-label" style="background: #00A86B">Recently Accepted</div>
             <a class="hero-name" href={heroes.recentlyAccepted.homepageUrl || heroes.recentlyAccepted.repoUrl || '#'} target="_blank" rel="noopener">{heroes.recentlyAccepted.name}</a>
-            {heroes.recentlyAccepted.description && <p class="hero-description">{heroes.recentlyAccepted.description.slice(0, 100)}{heroes.recentlyAccepted.description.length > 100 ? '...' : ''}</p>}
             <div class="hero-meta">
               {heroes.recentlyAccepted.stars ? <span class="hero-stat">{formatNumber(heroes.recentlyAccepted.stars)} stars</span> : null}
-              <span class="hero-category">{heroes.recentlyAccepted.category}</span>
+              {heroes.recentlyAccepted.contributors ? <span>{formatNumber(heroes.recentlyAccepted.contributors)} contribs</span> : null}
             </div>
+            <span class="hero-category">{heroes.recentlyAccepted.category}</span>
           </div>
         </div>
       )}
+    </div>
+  </section>
+
+  <section class="maintainers-section">
+    <h2 class="section-heading">Project Maintainers</h2>
+    <div class="maintainers-scroll">
+      {maintainers.map(m => <ProjectMaintainerCard maintainer={m} />)}
     </div>
   </section>
 
@@ -103,7 +159,7 @@ function formatNumber(n: number): string {
     </div>
   )}
 
-  <div id="cards-container" class="cards-grid" data-tab="everyone">
+  <div id="cards-container" class="cards-list" data-tab="everyone">
     <Fragment set:html={firstBatch.map(renderCard).join('')} />
   </div>
 
@@ -150,7 +206,7 @@ function formatNumber(n: number): string {
       return;
     }
 
-    container.style.display = 'grid';
+    container.style.display = '';
     archivedContainer.style.display = 'none';
 
     let projects = filterByTab(allProjects, currentTab);
@@ -301,6 +357,11 @@ function formatNumber(n: number): string {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
+  }
+
+  .hero-category {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
   }
 
   .project-card.keyboard-focused,

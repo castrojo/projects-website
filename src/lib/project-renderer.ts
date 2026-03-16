@@ -72,61 +72,66 @@ export function renderCard(p: SafeProject): string {
   const color = MATURITY_COLORS[p.maturity] ?? '#8b949e';
   const label = p.maturity.charAt(0).toUpperCase() + p.maturity.slice(1);
   const name = escapeHtml(p.name);
-  const desc = escapeHtml(p.description ?? '');
-  const category = escapeHtml(p.category + (p.subcategory ? ' > ' + p.subcategory : ''));
+  const desc = p.description ? escapeHtml(p.description) : '';
 
-  const statsHtml = (p.stars || p.contributors) ? `<div class="card-stats">${
-    p.stars ? `<span class="stat-item" title="GitHub Stars"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> ${formatNumber(p.stars)}</span>` : ''
+  function escHtml(s: string): string { return escapeHtml(s); }
+
+  const statsHtml = (p.stars || p.contributors) ? `<div class="card-stats" style="display:flex;gap:1rem;font-size:0.8125rem;color:var(--color-text-secondary);margin-bottom:0.25rem">${
+    p.stars ? `<span class="stat-item" style="display:inline-flex;align-items:center;gap:0.25rem" title="GitHub Stars"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> ${formatNumber(p.stars)}</span>` : ''
   }${
-    p.contributors ? `<span class="stat-item" title="Contributors"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4.001 4.001 0 0 0-6.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5ZM11 4a3.001 3.001 0 0 1 2.22 5.018 5.01 5.01 0 0 1 2.56 3.012.749.749 0 0 1-.4.974.75.75 0 0 1-.974-.4 3.51 3.51 0 0 0-2.522-2.372.75.75 0 0 1-.22-1.228 1.5 1.5 0 1 0-1.114-2.496.75.75 0 0 1-.559-1.394A3 3 0 0 1 11 4Z"/></svg> ${formatNumber(p.contributors)}</span>` : ''
+    p.contributors ? `<span class="stat-item" style="display:inline-flex;align-items:center;gap:0.25rem" title="Contributors"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4.001 4.001 0 0 0-6.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5ZM11 4a3.001 3.001 0 0 1 2.22 5.018 5.01 5.01 0 0 1 2.56 3.012.749.749 0 0 1-.4.974.75.75 0 0 1-.974-.4 3.51 3.51 0 0 0-2.522-2.372.75.75 0 0 1-.22-1.228 1.5 1.5 0 1 0-1.114-2.496.75.75 0 0 1-.559-1.394A3 3 0 0 1 11 4Z"/></svg> ${formatNumber(p.contributors)}</span>` : ''
   }</div>` : '';
 
-  const tagsHtml = (p.primaryLanguage || p.license) ? `<div class="card-tags">${
-    p.primaryLanguage ? `<span class="tag tag-language">${escapeHtml(p.primaryLanguage)}</span>` : ''
+  const tagsHtml = (p.primaryLanguage || p.license) ? `<div class="card-tags" style="display:flex;gap:0.375rem;flex-wrap:wrap;margin:0.25rem 0">${
+    p.primaryLanguage ? `<span class="tag tag-language">${escHtml(p.primaryLanguage)}</span>` : ''
   }${
-    p.license ? `<span class="tag tag-license">${escapeHtml(p.license)}</span>` : ''
+    p.license ? `<span class="tag tag-license">${escHtml(p.license)}</span>` : ''
   }</div>` : '';
 
-  const topicsHtml = p.topics?.length ? `<div class="card-topics">${p.topics.slice(0, 3).map(t => `<span class="topic-tag">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+  const topicsHtml = p.topics?.length ? `<div class="card-topics" style="display:flex;gap:0.25rem;flex-wrap:wrap;margin:0.25rem 0">${p.topics.slice(0, 3).map(t => `<span class="topic-tag">${escHtml(t)}</span>`).join('')}</div>` : '';
 
-  const auditHtml = p.lastAuditDate ? `<span class="audit-badge" title="Last audit: ${escapeHtml(p.lastAuditDate)}${p.lastAuditVendor ? ' by ' + escapeHtml(p.lastAuditVendor) : ''}">Audited</span>` : '';
+  const auditHtml = p.lastAuditDate ? `<span class="audit-badge" title="Last audit: ${escHtml(p.lastAuditDate)}${p.lastAuditVendor ? ' by ' + escHtml(p.lastAuditVendor) : ''}">Audited</span>` : '';
 
-  const activityHtml = (p.lastCommitDate || p.lastReleaseDate) ? `<div class="card-activity">${
-    p.lastCommitDate ? `<span class="activity-item" title="Last commit">${formatRelativeDate(p.lastCommitDate)}</span>` : ''
-  }${
-    p.lastReleaseDate ? `<span class="activity-item" title="Last release">Release: ${formatDate(p.lastReleaseDate)}</span>` : ''
-  }</div>` : '';
+  const activityHtml = p.lastCommitDate ? `<span style="color:var(--color-text-muted);font-size:0.8rem">${formatRelativeDate(p.lastCommitDate)}</span>` : '';
 
   const links: string[] = [];
-  if (p.repoUrl) links.push(`<a class="card-link" href="${escapeHtml(p.repoUrl)}" target="_blank" rel="noopener">GitHub</a>`);
-  if (p.homepageUrl) links.push(`<a class="card-link" href="${escapeHtml(p.homepageUrl)}" target="_blank" rel="noopener">Website</a>`);
-  if (p.devStatsUrl) links.push(`<a class="card-link" href="${escapeHtml(p.devStatsUrl)}" target="_blank" rel="noopener">DevStats</a>`);
-  if (p.slackUrl) links.push(`<a class="card-link" href="${escapeHtml(p.slackUrl)}" target="_blank" rel="noopener">Slack</a>`);
-  if (p.blogUrl) links.push(`<a class="card-link" href="${escapeHtml(p.blogUrl)}" target="_blank" rel="noopener">Blog</a>`);
-  if (p.twitterUrl) links.push(`<a class="card-link" href="${escapeHtml(p.twitterUrl)}" target="_blank" rel="noopener">Twitter</a>`);
+  if (p.repoUrl) links.push(`<a class="card-link" href="${escHtml(p.repoUrl)}" target="_blank" rel="noopener">GitHub</a>`);
+  if (p.homepageUrl) links.push(`<a class="card-link" href="${escHtml(p.homepageUrl)}" target="_blank" rel="noopener">Website</a>`);
+  if (p.devStatsUrl) links.push(`<a class="card-link" href="${escHtml(p.devStatsUrl)}" target="_blank" rel="noopener">DevStats</a>`);
+  if (p.slackUrl) links.push(`<a class="card-link" href="${escHtml(p.slackUrl)}" target="_blank" rel="noopener">Slack</a>`);
+
+  const logoHtml = p.logoUrl
+    ? `<img src="${escHtml(p.logoUrl)}" alt="${name} logo" width="64" height="64" loading="lazy" style="width:64px;height:64px;object-fit:contain" />`
+    : `<div style="width:64px;height:64px;background:${color}22;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="font-size:1.5rem;color:${color}">${name[0]}</span></div>`;
 
   return `<article
-    class="project-card"
-    style="--card-accent: ${color}"
-    data-maturity="${escapeHtml(p.maturity)}"
-    data-slug="${escapeHtml(p.slug)}"
+    class="project-card letterbox-card"
+    style="display:flex;flex-direction:row;gap:1rem;align-items:flex-start;padding:1rem;--card-accent:${color}"
+    data-maturity="${escHtml(p.maturity)}"
+    data-slug="${escHtml(p.slug)}"
     data-name="${name.toLowerCase()}"
-    data-category="${escapeHtml(p.category.toLowerCase())}"
+    data-category="${escHtml(p.category.toLowerCase())}"
   >
-    <div class="card-header">
-      <span class="maturity-badge" style="background: ${color}">${label}</span>
-      ${auditHtml}
-      ${p.logoUrl ? `<img class="card-logo" src="${escapeHtml(p.logoUrl)}" alt="${name} logo" width="40" height="40" loading="lazy" style="width:40px;height:40px;object-fit:contain" />` : ''}
+    <div class="letterbox-logo" style="flex-shrink:0;width:64px;display:flex;align-items:flex-start;padding-top:0.25rem">
+      ${logoHtml}
     </div>
-    <div class="card-body">
-      <h3 class="card-name">${name}</h3>
-      ${desc ? `<p class="card-description">${desc}</p>` : ''}
+    <div class="letterbox-body" style="flex:1;min-width:0">
+      <div class="letterbox-header" style="display:flex;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.375rem">
+        <h3 class="card-name" style="margin:0;font-size:1rem;font-weight:600;flex:1;min-width:0">${name}</h3>
+        <div style="display:flex;gap:0.375rem;align-items:center;flex-shrink:0">
+          <span class="maturity-badge" style="background:${color};color:#fff;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;text-transform:uppercase;font-weight:600">${label}</span>
+          ${auditHtml}
+        </div>
+      </div>
+      ${desc ? `<p class="card-description" style="margin:0 0 0.375rem;font-size:0.875rem;color:var(--color-text-secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${desc}</p>` : ''}
       ${tagsHtml}
       ${topicsHtml}
-      ${statsHtml}
-      <div class="card-category">${category}</div>
-      ${activityHtml}
-      ${links.length ? `<div class="card-links">${links.join('')}</div>` : ''}
+      <div class="letterbox-footer" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-top:0.375rem;font-size:0.8rem">
+        ${statsHtml}
+        <span style="color:var(--color-text-muted)">${escHtml(p.category)}${p.subcategory ? ' > ' + escHtml(p.subcategory) : ''}</span>
+        ${activityHtml}
+      </div>
+      ${links.length ? `<div class="card-links" style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.375rem">${links.join('')}</div>` : ''}
     </div>
   </article>`;
 }

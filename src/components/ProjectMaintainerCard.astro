@@ -1,0 +1,45 @@
+---
+export interface ProjectMaintainer {
+  name: string;
+  handle: string;
+  projects: string[];
+  maturity: string;
+  avatarUrl: string;
+}
+
+interface Props {
+  maintainer: ProjectMaintainer;
+}
+
+const { maintainer } = Astro.props;
+
+const MATURITY_COLOR: Record<string, string> = {
+  Graduated: '#FFB300',
+  Incubating: '#0086FF',
+  Sandbox: '#8b949e',
+};
+const accentColor = MATURITY_COLOR[maintainer.maturity] ?? '#8b949e';
+const profileUrl = `https://github.com/${maintainer.handle}`;
+---
+<article class="maintainer-card" style={`--card-accent: ${accentColor}`}>
+  <div class="card-accent-bar"></div>
+  <div class="card-body-inner">
+    <img
+      class="maintainer-avatar"
+      src={maintainer.avatarUrl}
+      width="56"
+      height="56"
+      loading="lazy"
+      alt={maintainer.name}
+    />
+    <div class="maintainer-info">
+      <a class="maintainer-name" href={profileUrl} target="_blank" rel="noopener">{maintainer.name}</a>
+      <span class="maintainer-handle">@{maintainer.handle}</span>
+      <div class="maintainer-projects">
+        {maintainer.projects.slice(0, 3).map(p => (
+          <span class="project-chip">{p}</span>
+        ))}
+      </div>
+    </div>
+  </div>
+</article>
