@@ -3,6 +3,7 @@ import ProjectsLayout from '../layouts/ProjectsLayout.astro';
 import { formatRelativeDate } from '../lib/project-renderer';
 import type { SafeProject } from '../lib/project-renderer';
 import { selectHeroSets } from '../lib/heroes';
+import type { ChangelogEvent } from '../lib/tabs';
 import staffSupportData from '../data/staff-support.json';
 import fs from 'node:fs';
 
@@ -25,6 +26,19 @@ try {
   }
 } catch {
   console.warn('projects.json not found — run just sync first');
+}
+
+// Latest LWCN newsletter — pinned card on Everyone tab, rendered at build time
+let pinnedNewsletter: ChangelogEvent | null = null;
+try {
+  const changelogRaw = fs.readFileSync('src/data/changelog.json', 'utf-8');
+  const allEvents = JSON.parse(changelogRaw) as ChangelogEvent[];
+  const newsletters = allEvents.filter(e => e.type === 'newsletter');
+  if (newsletters.length > 0) {
+    pinnedNewsletter = newsletters.sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
+  }
+} catch {
+  // changelog.json not yet generated — pinned newsletter won't show on first build
 }
 
 const categories = [...new Set(projects.filter(p => p.maturity !== 'archived').map(p => p.category).filter(Boolean))].sort();
@@ -102,8 +116,40 @@ function formatNumber(n: number): string {
     </div>
   )}
 
-  <!-- LWCN newsletter section — visible only on Everyone tab -->
-  <div id="lwcn-container" style="display:none"></div>
+  <!-- Pinned LWCN newsletter — static, build-time rendered, visible only on Everyone tab -->
+  {pinnedNewsletter && (
+    <div id="pinned-newsletter" class="pinned-newsletter-section">
+      <div class="pinned-newsletter-label">
+        <span class="pinned-badge">📌 Latest Newsletter</span>
+      </div>
+      <a
+        href={pinnedNewsletter.lwcnIssueUrl ?? 'https://lwcn.dev/newsletter/'}
+        target="_blank"
+        rel="noopener"
+        class="pinned-newsletter-card"
+        aria-label={`Read LWCN newsletter: ${pinnedNewsletter.lwcnTitle}`}
+      >
+        <img
+          src={pinnedNewsletter.logoUrl}
+          alt="Last Week in Cloud Native logo"
+          width="56"
+          height="56"
+          loading="eager"
+          class="pinned-newsletter-logo"
+        />
+        <div class="pinned-newsletter-body">
+          <div class="pinned-newsletter-title">{pinnedNewsletter.lwcnTitle ?? 'Last Week in Cloud Native'}</div>
+          {pinnedNewsletter.description && (
+            <p class="pinned-newsletter-desc">{pinnedNewsletter.description}</p>
+          )}
+          <span class="pinned-newsletter-cta">Read issue →</span>
+        </div>
+        <div class="pinned-newsletter-time">
+          {pinnedNewsletter.timestamp && formatRelativeDate(pinnedNewsletter.timestamp)}
+        </div>
+      </a>
+    </div>
+  )}
 
   <h2 id="changelog-heading" class="changelog-heading">Changelog</h2>
   <div id="cards-container" class="cards-list" data-tab="everyone"></div>
@@ -115,8 +161,8 @@ function formatNumber(n: number): string {
 <script>
   import type { SafeProject } from '../lib/project-renderer';
   import { renderTimeline } from '../lib/archived-timeline';
-  import { initTabs, filterByTab, filterChangelogByTab, type TabId, type ChangelogEvent } from '../lib/tabs';
-  import { renderChangelogEvent, renderNewsletterItem } from '../lib/changelog-renderer';
+  import { initTabs, filterChangelogByTab, type TabId, type ChangelogEvent } from '../lib/tabs';
+  import { renderChangelogEvent } from '../lib/changelog-renderer';
   import { initSearch, searchProjects } from '../lib/search';
   import { initKeyboard, tabFromNumber } from '../lib/keyboard';
   import { fireFountain, preloadOnHover, fireHearts } from '../lib/confetti';
@@ -146,14 +192,12 @@ function formatNumber(n: number): string {
   function renderCurrentView(): void {
     const container = document.getElementById('cards-container')!;
     const archivedContainer = document.getElementById('archived-container')!;
-    const lwcnContainer = document.getElementById('lwcn-container')!;
     const changelogHeading = document.getElementById('changelog-heading');
     const noResults = document.getElementById('no-results')!;
 
     if (currentTab === 'archived') {
       container.style.display = 'none';
       archivedContainer.style.display = 'block';
-      lwcnContainer.style.display = 'none';
       if (changelogHeading) changelogHeading.style.display = 'none';
       if (!archivedRendered) {
         const archived = allProjects.filter(p => p.maturity === 'archived');
@@ -167,58 +211,37 @@ function formatNumber(n: number): string {
     archivedContainer.style.display = 'none';
     if (changelogHeading) changelogHeading.style.display = '';
 
-    // Resolve which changelog events to show
-    let events = filterChangelogByTab(allChangelog, currentTab);
+    // Resolve which changelog events to show (newsletter events excluded from project feed)
+    let events = filterChangelogByTab(allChangelog, currentTab)
+      .filter(e => e.type !== 'newsletter');
 
     // Build project lookup for rich card rendering
     const projectsBySlug = new Map(allProjects.map(p => [p.slug, p]));
 
-    // Apply category filter (project events only — match via projectSlug → project category)
+    // Apply category filter
     if (currentCategory) {
       const slugsInCategory = new Set(
         allProjects.filter(p => p.category === currentCategory).map(p => p.slug)
       );
-      events = events.filter(e =>
-        e.type === 'newsletter' || slugsInCategory.has(e.projectSlug ?? '')
-      );
+      events = events.filter(e => slugsInCategory.has(e.projectSlug ?? ''));
     }
 
-    // Apply search filter (match against allProjects, then filter events by slug)
+    // Apply search filter
     if (currentQuery) {
       const results = searchProjects(currentQuery);
       const matchedSlugs = new Set(results.map(r => r.slug));
-      events = events.filter(e =>
-        e.type === 'newsletter' || matchedSlugs.has(e.projectSlug ?? '')
-      );
+      events = events.filter(e => matchedSlugs.has(e.projectSlug ?? ''));
     }
 
-    // Everyone tab: LWCN newsletters at top, project events below
-    if (currentTab === 'everyone') {
-      const newsletters = events.filter(e => e.type === 'newsletter');
-      const projectEvents = events.filter(e => e.type !== 'newsletter');
-      if (newsletters.length > 0) {
-        lwcnContainer.style.display = '';
-        lwcnContainer.innerHTML = newsletters.map(renderNewsletterItem).join('');
-      } else {
-        lwcnContainer.style.display = 'none';
-      }
-      const hasResults = projectEvents.length > 0;
-      noResults.style.display = hasResults ? 'none' : 'block';
-      container.innerHTML = hasResults
-        ? projectEvents.map(e => renderChangelogEvent(e, e.projectSlug ? projectsBySlug.get(e.projectSlug) : undefined)).join('')
-        : '';
-    } else {
-      lwcnContainer.style.display = 'none';
-      const hasResults = events.length > 0;
-      noResults.style.display = hasResults ? 'none' : 'block';
-      container.innerHTML = hasResults
-        ? events.map(e => renderChangelogEvent(e, e.projectSlug ? projectsBySlug.get(e.projectSlug) : undefined)).join('')
-        : '';
-    }
+    const hasResults = events.length > 0;
+    noResults.style.display = hasResults ? 'none' : 'block';
+    container.innerHTML = hasResults
+      ? events.map(e => renderChangelogEvent(e, e.projectSlug ? projectsBySlug.get(e.projectSlug) : undefined)).join('')
+      : '';
 
     const countEl = document.getElementById('search-count');
     if (countEl) {
-      countEl.textContent = currentQuery ? String(events.filter(e => e.type !== 'newsletter').length) : '';
+      countEl.textContent = currentQuery ? String(events.length) : '';
     }
     wireCardEvents();
   }
@@ -266,15 +289,19 @@ function formatNumber(n: number): string {
     const heroesSection = document.querySelector<HTMLElement>('.heroes-section');
     const staffSection = document.querySelector<HTMLElement>('.staff-support-section, .maintainers-section');
     const changelogHeading = document.getElementById('changelog-heading');
+    const pinnedNewsletter = document.getElementById('pinned-newsletter');
     if (tab === 'archived') {
       if (heroesSection) heroesSection.style.display = 'none';
       if (staffSection) staffSection.style.display = 'none';
       if (changelogHeading) changelogHeading.style.display = 'none';
+      if (pinnedNewsletter) pinnedNewsletter.style.display = 'none';
       return;
     }
     if (heroesSection) heroesSection.style.display = '';
     if (staffSection) staffSection.style.display = '';
     if (changelogHeading) changelogHeading.style.display = '';
+    // Pinned newsletter only on Everyone tab
+    if (pinnedNewsletter) pinnedNewsletter.style.display = tab === 'everyone' ? '' : 'none';
     const heroKey = ['graduated','incubating','sandbox'].includes(tab) ? tab : 'everyone';
     document.querySelectorAll<HTMLElement>('.heroes-grid[data-heroes-tab]').forEach(grid => {
       grid.style.display = grid.dataset.heroesTab === heroKey ? 'grid' : 'none';
@@ -402,6 +429,84 @@ function formatNumber(n: number): string {
     margin: 0 0 1.5rem 0;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--color-border-default);
+  }
+
+  .pinned-newsletter-section {
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .pinned-newsletter-label {
+    margin-bottom: 0.5rem;
+  }
+
+  .pinned-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-secondary);
+  }
+
+  .pinned-newsletter-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: color-mix(in srgb, #0086FF 6%, var(--color-bg-secondary));
+    border: 1px solid color-mix(in srgb, #0086FF 25%, var(--color-border-default));
+    border-left: 4px solid #0086FF;
+    border-radius: 0 8px 8px 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease, transform 0.1s ease;
+    cursor: pointer;
+  }
+
+  .pinned-newsletter-card:hover {
+    background: color-mix(in srgb, #0086FF 12%, var(--color-bg-secondary));
+    transform: translateX(2px);
+  }
+
+  .pinned-newsletter-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .pinned-newsletter-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pinned-newsletter-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .pinned-newsletter-desc {
+    margin: 0 0 0.375rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pinned-newsletter-cta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #0086FF;
+  }
+
+  .pinned-newsletter-time {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .heroes-section {
