@@ -19,6 +19,18 @@ test.describe('header — desktop (1280×800)', () => {
     expect(size!.h).toBe(42);
   });
 
+  test('logo-to-title gap is ~8px (0.5rem) — no unexpected spacing between logo and title', async ({ page }) => {
+    const gap = await page.evaluate(() => {
+      const logo  = document.querySelector('.cncf-logo-wrapper');
+      const title = document.querySelector('.title-block');
+      if (!logo || !title) return null;
+      return title.getBoundingClientRect().left - logo.getBoundingClientRect().right;
+    });
+    expect(gap).not.toBeNull();
+    expect(gap!, 'logo-to-title gap must be ~8px (0.5rem); if larger, check for unexpected width on .cncf-logo-wrapper or padding on .title-block').toBeGreaterThanOrEqual(4);
+    expect(gap!, 'logo-to-title gap must be ~8px (0.5rem); excessive gap means something is pushing title away from logo').toBeLessThanOrEqual(14);
+  });
+
   test('site title reads "CNCF Projects"', async ({ page }) => {
     const text = await page.locator('.site-title').textContent();
     expect(text?.trim()).toBe('CNCF Projects');
