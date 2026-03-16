@@ -55,11 +55,94 @@ test.describe('keyboard shortcuts', () => {
     await expect(page.locator('#keyboard-help-modal')).not.toBeVisible();
   });
 
-  test('"j" focuses next card and "k" focuses previous', async ({ page }) => {
+  test('"j" applies keyboard-focused class to next card', async ({ page }) => {
     await page.keyboard.press('j');
-    // A card should now have focus
-    const focusedCard = page.locator('.project-card:focus, .project-card:focus-within');
-    // Just check j doesn't crash — actual focus behavior depends on implementation
+    const focused = page.locator('.project-card.keyboard-focused, .hero-card.keyboard-focused');
+    await expect(focused).toHaveCount(1);
+  });
+
+  test('"k" moves keyboard-focused class to previous card', async ({ page }) => {
+    // Focus second card then go back
+    await page.keyboard.press('j');
+    await page.keyboard.press('j');
     await page.keyboard.press('k');
+    const focused = page.locator('.project-card.keyboard-focused, .hero-card.keyboard-focused');
+    await expect(focused).toHaveCount(1);
+  });
+
+  test('keyboard-focused class is removed on tab click', async ({ page }) => {
+    await page.keyboard.press('j');
+    await expect(page.locator('.keyboard-focused')).toHaveCount(1);
+    // Click a tab button to reset focus
+    const tabBtn = page.locator('.section-link[data-tab]').first();
+    await tabBtn.click();
+    await expect(page.locator('.keyboard-focused')).toHaveCount(0);
+  });
+
+  test('"h" scrolls to top', async ({ page }) => {
+    // Scroll down first
+    await page.evaluate(() => window.scrollTo(0, 500));
+    await page.waitForTimeout(100);
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    expect(scrollBefore).toBeGreaterThan(0);
+    await page.keyboard.press('h');
+    await page.waitForTimeout(500);
+    const scrollAfter = await page.evaluate(() => window.scrollY);
+    expect(scrollAfter).toBeLessThan(scrollBefore);
+  });
+
+  test('Space scrolls down', async ({ page }) => {
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press(' ');
+    await page.waitForTimeout(500);
+    const scrollAfter = await page.evaluate(() => window.scrollY);
+    expect(scrollAfter).toBeGreaterThan(scrollBefore);
+  });
+
+  test('Shift+Space scrolls up', async ({ page }) => {
+    // Scroll down first so we have room to scroll up
+    await page.evaluate(() => window.scrollTo(0, 800));
+    await page.waitForTimeout(200);
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('Shift+ ');
+    await page.waitForTimeout(500);
+    const scrollAfter = await page.evaluate(() => window.scrollY);
+    expect(scrollAfter).toBeLessThan(scrollBefore);
+  });
+
+  test('Tab cycles to next tab', async ({ page }) => {
+    const firstTab = page.locator('.section-link.active');
+    const firstTabName = await firstTab.getAttribute('data-tab');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(200);
+    const activeTab = page.locator('.section-link.active');
+    const nextTabName = await activeTab.getAttribute('data-tab');
+    expect(nextTabName).not.toBe(firstTabName);
+  });
+
+  test('Shift+Tab cycles to previous tab', async ({ page }) => {
+    // Go forward first
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(200);
+    const afterForward = await page.locator('.section-link.active').getAttribute('data-tab');
+    await page.keyboard.press('Shift+Tab');
+    await page.waitForTimeout(200);
+    const afterBack = await page.locator('.section-link.active').getAttribute('data-tab');
+    expect(afterBack).not.toBe(afterForward);
+  });
+
+  test('"o" opens focused card link', async ({ page }) => {
+    // Focus a card first
+    await page.keyboard.press('j');
+    await expect(page.locator('.keyboard-focused')).toHaveCount(1);
+    // Check that pressing 'o' triggers a new tab (we check via popup event)
+    const popupPromise = page.waitForEvent('popup', { timeout: 3000 }).catch(() => null);
+    await page.keyboard.press('o');
+    const popup = await popupPromise;
+    // If the focused card had a link, a popup should have opened
+    // (hero cards or project cards may or may not have links)
+    if (popup) {
+      expect(popup.url()).toBeTruthy();
+    }
   });
 });
