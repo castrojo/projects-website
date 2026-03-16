@@ -17,15 +17,16 @@
 .header-inner {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 2rem;
   padding-bottom: 1rem;
 }
 
 .header-left {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
   flex: 1;
 }
 
@@ -33,6 +34,14 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  max-width: 600px;
 }
 
 .title-block {
@@ -122,7 +131,6 @@
 
 .search-wrapper {
   position: relative;
-  max-width: 600px;
   width: 100%;
 }
 

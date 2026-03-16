@@ -59,10 +59,12 @@ const banners = await getActiveBanners();
               <p class="site-subtitle" id="rotating-slogan" aria-live="polite">Built for the love of the game</p>
             </div>
           </div>
-          <SiteSwitcher activeSite="projects" />
-          <div class="search-wrapper">
-            <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
-            <span class="search-count" id="search-count"></span>
+          <div class="nav-group">
+            <SiteSwitcher activeSite="projects" />
+            <div class="search-wrapper">
+              <input type="text" id="search-input" class="search-input" placeholder="Search projects... (/)" aria-label="Search projects" />
+              <span class="search-count" id="search-count"></span>
+            </div>
           </div>
         </div>
         <div class="header-actions">
