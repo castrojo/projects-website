@@ -7,8 +7,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
+  timeout: 30000,
   use: {
     baseURL: 'http://localhost:4322/projects-website/',
+    headless: true,
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,8 +20,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npx astro dev --port 4322',
+    command: 'npx astro build && npx astro preview --port 4322',
     url: 'http://localhost:4322/projects-website/',
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });
