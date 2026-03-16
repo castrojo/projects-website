@@ -29,36 +29,69 @@ const heroes = selectHeroes(projects);
 const STATIC_COUNT = 30;
 const activeProjects = projects.filter(p => p.maturity !== 'archived');
 const firstBatch = activeProjects.slice(0, STATIC_COUNT);
+
+function formatNumber(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
 ---
 <ProjectsLayout stats={stats} categories={categories}>
   <section class="heroes-section">
     <div class="heroes-grid">
       {heroes.graduated && (
         <div class="hero-card" style="--card-accent: #FFB300" data-slug={heroes.graduated.slug}>
-          <img src={heroes.graduated.logoUrl} alt={`${heroes.graduated.name} logo`} class="hero-logo" width="64" height="64" style="width:64px;height:64px;object-fit:contain" />
-          <div class="hero-label" style="background: #FFB300">Graduated</div>
-          <div class="hero-name">{heroes.graduated.name}</div>
+          {heroes.graduated.logoUrl && <img src={heroes.graduated.logoUrl} alt={`${heroes.graduated.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-content">
+            <div class="hero-label" style="background: #FFB300">Graduated</div>
+            <a class="hero-name" href={heroes.graduated.homepageUrl || heroes.graduated.repoUrl || '#'} target="_blank" rel="noopener">{heroes.graduated.name}</a>
+            {heroes.graduated.description && <p class="hero-description">{heroes.graduated.description.slice(0, 100)}{heroes.graduated.description.length > 100 ? '...' : ''}</p>}
+            <div class="hero-meta">
+              {heroes.graduated.stars ? <span class="hero-stat">{formatNumber(heroes.graduated.stars)} stars</span> : null}
+              <span class="hero-category">{heroes.graduated.category}</span>
+            </div>
+          </div>
         </div>
       )}
       {heroes.incubating && (
         <div class="hero-card" style="--card-accent: #0086FF" data-slug={heroes.incubating.slug}>
-          <img src={heroes.incubating.logoUrl} alt={`${heroes.incubating.name} logo`} class="hero-logo" width="64" height="64" style="width:64px;height:64px;object-fit:contain" />
-          <div class="hero-label" style="background: #0086FF">Incubating</div>
-          <div class="hero-name">{heroes.incubating.name}</div>
+          {heroes.incubating.logoUrl && <img src={heroes.incubating.logoUrl} alt={`${heroes.incubating.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-content">
+            <div class="hero-label" style="background: #0086FF">Incubating</div>
+            <a class="hero-name" href={heroes.incubating.homepageUrl || heroes.incubating.repoUrl || '#'} target="_blank" rel="noopener">{heroes.incubating.name}</a>
+            {heroes.incubating.description && <p class="hero-description">{heroes.incubating.description.slice(0, 100)}{heroes.incubating.description.length > 100 ? '...' : ''}</p>}
+            <div class="hero-meta">
+              {heroes.incubating.stars ? <span class="hero-stat">{formatNumber(heroes.incubating.stars)} stars</span> : null}
+              <span class="hero-category">{heroes.incubating.category}</span>
+            </div>
+          </div>
         </div>
       )}
       {heroes.sandbox && (
         <div class="hero-card" style="--card-accent: #8b949e" data-slug={heroes.sandbox.slug}>
-          <img src={heroes.sandbox.logoUrl} alt={`${heroes.sandbox.name} logo`} class="hero-logo" width="64" height="64" style="width:64px;height:64px;object-fit:contain" />
-          <div class="hero-label" style="background: #8b949e">Sandbox</div>
-          <div class="hero-name">{heroes.sandbox.name}</div>
+          {heroes.sandbox.logoUrl && <img src={heroes.sandbox.logoUrl} alt={`${heroes.sandbox.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-content">
+            <div class="hero-label" style="background: #8b949e">Sandbox</div>
+            <a class="hero-name" href={heroes.sandbox.homepageUrl || heroes.sandbox.repoUrl || '#'} target="_blank" rel="noopener">{heroes.sandbox.name}</a>
+            {heroes.sandbox.description && <p class="hero-description">{heroes.sandbox.description.slice(0, 100)}{heroes.sandbox.description.length > 100 ? '...' : ''}</p>}
+            <div class="hero-meta">
+              {heroes.sandbox.stars ? <span class="hero-stat">{formatNumber(heroes.sandbox.stars)} stars</span> : null}
+              <span class="hero-category">{heroes.sandbox.category}</span>
+            </div>
+          </div>
         </div>
       )}
       {heroes.recentlyAccepted && (
         <div class="hero-card" style="--card-accent: #00A86B" data-slug={heroes.recentlyAccepted.slug}>
-          <img src={heroes.recentlyAccepted.logoUrl} alt={`${heroes.recentlyAccepted.name} logo`} class="hero-logo" width="64" height="64" style="width:64px;height:64px;object-fit:contain" />
-          <div class="hero-label" style="background: #00A86B">Recently Accepted</div>
-          <div class="hero-name">{heroes.recentlyAccepted.name}</div>
+          {heroes.recentlyAccepted.logoUrl && <img src={heroes.recentlyAccepted.logoUrl} alt={`${heroes.recentlyAccepted.name} logo`} class="hero-logo" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:contain" />}
+          <div class="hero-content">
+            <div class="hero-label" style="background: #00A86B">Recently Accepted</div>
+            <a class="hero-name" href={heroes.recentlyAccepted.homepageUrl || heroes.recentlyAccepted.repoUrl || '#'} target="_blank" rel="noopener">{heroes.recentlyAccepted.name}</a>
+            {heroes.recentlyAccepted.description && <p class="hero-description">{heroes.recentlyAccepted.description.slice(0, 100)}{heroes.recentlyAccepted.description.length > 100 ? '...' : ''}</p>}
+            <div class="hero-meta">
+              {heroes.recentlyAccepted.stars ? <span class="hero-stat">{formatNumber(heroes.recentlyAccepted.stars)} stars</span> : null}
+              <span class="hero-category">{heroes.recentlyAccepted.category}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

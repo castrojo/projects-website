@@ -28,10 +28,11 @@ describe('renderCard', () => {
     expect(html).toContain('Sandbox');
   });
 
-  it('renders stars and contributors', () => {
+  it('renders stars and contributors with icons', () => {
     const html = renderCard(base);
-    expect(html).toContain('110.0k stars');
-    expect(html).toContain('3.0k contributors');
+    expect(html).toContain('stat-item');
+    expect(html).toContain('110.0k');
+    expect(html).toContain('3.0k');
   });
 
   it('escapes XSS in name', () => {
@@ -43,5 +44,40 @@ describe('renderCard', () => {
   it('handles missing optional fields gracefully', () => {
     const html = renderCard({ name: 'Minimal', slug: 'minimal', maturity: 'sandbox', category: 'Test', subcategory: '', logoUrl: '', updatedAt: '' });
     expect(html).toContain('Minimal');
+  });
+
+  it('renders language and license tags', () => {
+    const html = renderCard({ ...base, primaryLanguage: 'Go', license: 'Apache-2.0' });
+    expect(html).toContain('tag-language');
+    expect(html).toContain('Go');
+    expect(html).toContain('tag-license');
+    expect(html).toContain('Apache-2.0');
+  });
+
+  it('renders topic tags up to 3', () => {
+    const html = renderCard({ ...base, topics: ['cloud', 'containers', 'orchestration', 'extra'] });
+    expect(html).toContain('topic-tag');
+    expect(html).toContain('cloud');
+    expect(html).toContain('orchestration');
+    expect(html).not.toContain('extra');
+  });
+
+  it('renders audit badge when audited', () => {
+    const html = renderCard({ ...base, lastAuditDate: '2024-06-01', lastAuditVendor: 'Trail of Bits' });
+    expect(html).toContain('audit-badge');
+    expect(html).toContain('Audited');
+    expect(html).toContain('Trail of Bits');
+  });
+
+  it('renders activity info', () => {
+    const html = renderCard({ ...base, lastCommitDate: '2024-12-01', lastReleaseDate: '2024-11-15' });
+    expect(html).toContain('card-activity');
+    expect(html).toContain('activity-item');
+  });
+
+  it('renders blog and twitter links', () => {
+    const html = renderCard({ ...base, blogUrl: 'https://blog.example.com', twitterUrl: 'https://twitter.com/k8s' });
+    expect(html).toContain('Blog');
+    expect(html).toContain('Twitter');
   });
 });
