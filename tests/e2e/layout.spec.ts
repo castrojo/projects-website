@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('layout structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('.site-header', { timeout: 10000 });
   });
 
   test('sidebar is on the LEFT side of content', async ({ page }) => {
@@ -18,32 +19,31 @@ test.describe('layout structure', () => {
     expect(sidebarBox!.x).toBeLessThan(contentBox!.x);
   });
 
-  test('CNCF logo is visible in header at 56x56', async ({ page }) => {
-    // Reference: <span class="cncf-logo-wrapper"> with 56x56 SVG
+  test('CNCF logo is visible in header at 42x42', async ({ page }) => {
+    // Canonical size is 42×42 — matches projects-website reference implementation
     const logo = page.locator('header .cncf-logo-wrapper');
     await expect(logo).toBeVisible();
-    // Check for 56px dimensions on the contained image/svg
     const img = logo.locator('img, svg').first();
     const width = await img.getAttribute('width');
     const height = await img.getAttribute('height');
-    expect(width).toBe('56');
-    expect(height).toBe('56');
+    expect(width).toBe('42');
+    expect(height).toBe('42');
   });
 
-  test('header contains logo, title, slogan, SiteSwitcher, search, theme toggle, help button', async ({ page }) => {
+  test('header contains logo, title, SiteSwitcher, search, theme toggle, help button', async ({ page }) => {
+    // Canonical header: no rotating slogan (removed from design)
     const header = page.locator('header');
     await expect(header.locator('h1')).toBeVisible();
-    await expect(header.locator('#rotating-slogan')).toBeVisible();
     await expect(header.locator('.site-switcher')).toBeVisible();
     await expect(header.locator('#search-input')).toBeVisible();
     await expect(header.locator('#theme-toggle')).toBeVisible();
     await expect(header.locator('#help-button')).toBeVisible();
   });
 
-  test('search input is in header-left section below logo-title', async ({ page }) => {
-    // Reference: search is inside .header-left, NOT in .header-controls/.header-actions
-    const searchInLeft = page.locator('.header-left .search-wrapper, .header-left #search-input');
-    await expect(searchInLeft.first()).toBeVisible();
+  test('search input is in nav-group (not header-left)', async ({ page }) => {
+    // Canonical: search lives in .nav-group (sibling of .header-left), NOT inside .header-left
+    const searchInNav = page.locator('.nav-group .search-wrapper, .nav-group #search-input');
+    await expect(searchInNav.first()).toBeVisible();
   });
 
   test('tab navigation is inside the header container', async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('layout structure', () => {
 
   test('header uses .header-left and .header-actions structure', async ({ page }) => {
     // Reference: header has .header-left (logo + search) and .header-actions (toggle + help)
-    // Bug: projects-website uses .header-brand and .header-controls instead
+    // Canonical: projects-website uses .header-left and .header-actions
     const headerLeft = page.locator('header .header-left');
     const headerActions = page.locator('header .header-actions');
     await expect(headerLeft).toBeVisible();
