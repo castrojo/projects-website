@@ -101,6 +101,14 @@ is for AI agent queries only.
 
 **Tests MUST be written before implementation. Always.**
 
+### Mandatory commit gate — ALL must pass before `git commit`
+
+- [ ] `just test` passes (unit tests)
+- [ ] `just test-e2e` passes (E2E — requires `just serve` running in another terminal)
+- [ ] Every new feature has at least one test that was verified **RED** before implementation
+
+**If you cannot run the tests, the task is BLOCKED — not done. Do not commit. Do not mark ✅.**
+
 ### The mandatory TDD workflow for any renderer or component change:
 
 1. **Baseline**: Run `just test` — confirm all tests green before touching anything
@@ -127,6 +135,34 @@ include all fields that A's tests cover**. This prevents silent stripping when r
 
 Example: `project-renderer.test.ts` tests 20 fields on `renderCard`. `changelog-renderer.test.ts`
 must have a `with full SafeProject` describe block that tests the same 20 fields.
+
+### Required tests by feature — never omit these
+
+#### Header stability (tests/e2e/header.spec.ts)
+
+Any change to `layout.css` or the layout Astro file MUST keep these tests passing:
+
+- `.site-title` computed `white-space === 'nowrap'` — title must NEVER wrap to two lines
+- Site title renders on exactly one line (height ≤ 1.5× lineHeight)
+- CNCF logo is exactly `42×42` (not ≤56, not 56 — exactly 42)
+- `header-left` is exactly 240px wide
+
+**Post-mortem (2026-03-16):** An agent removed `white-space: nowrap` from `.site-title` and
+"CNCF Projects" wrapped to two lines in production. No test caught it.
+
+#### Pinned/featured card (tests/e2e/header.spec.ts — `pinned newsletter section` describe)
+
+Any pinned or featured section MUST have E2E tests that verify:
+- Visible on the correct tab
+- Hidden on ALL other tabs (verify each tab individually — not just one)
+- Contains expected content elements (logo, title, link URL)
+
+**Post-mortem (2026-03-16):** Agent shipped `feat: pinned LWCN newsletter card` (commit `bad56c9`)
+with zero tests. The feature was marked done without any verification.
+
+#### Tab visibility logic
+
+When showing/hiding elements per tab: test every tab transition, not just the happy path.
 
 ### Why this rule exists (post-mortem, 2026-03-16):
 

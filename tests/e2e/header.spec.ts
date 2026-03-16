@@ -8,20 +8,39 @@ test.describe('header — desktop (1280×800)', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('CNCF logo renders at correct size (≤56px)', async ({ page }) => {
+  test('CNCF logo renders at exactly 42×42', async ({ page }) => {
     const size = await page.evaluate(() => {
       const img = document.querySelector('.cncf-logo-wrapper img') as HTMLImageElement | null;
       if (!img) return null;
-      return { w: img.getBoundingClientRect().width, h: img.getBoundingClientRect().height };
+      return { w: Math.round(img.getBoundingClientRect().width), h: Math.round(img.getBoundingClientRect().height) };
     });
     expect(size).not.toBeNull();
-    expect(size!.h).toBeLessThanOrEqual(56);
-    expect(size!.h).toBeGreaterThan(0);
+    expect(size!.w).toBe(42);
+    expect(size!.h).toBe(42);
   });
 
   test('site title reads "CNCF Projects"', async ({ page }) => {
     const text = await page.locator('.site-title').textContent();
     expect(text?.trim()).toBe('CNCF Projects');
+  });
+
+  test('site-title white-space is nowrap — title must never wrap to two lines', async ({ page }) => {
+    const ws = await page.evaluate(() => {
+      const el = document.querySelector('.site-title');
+      return el ? getComputedStyle(el).whiteSpace : null;
+    });
+    expect(ws, 'site-title must have white-space: nowrap to prevent title wrapping').toBe('nowrap');
+  });
+
+  test('site title renders on exactly one line', async ({ page }) => {
+    const isSingleLine = await page.evaluate(() => {
+      const el = document.querySelector('.site-title');
+      if (!el) return false;
+      const style = getComputedStyle(el);
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+      return el.getBoundingClientRect().height <= lineHeight * 1.5;
+    });
+    expect(isSingleLine, 'site-title must render on a single line — check white-space: nowrap on .site-title in layout.css').toBe(true);
   });
 
   test('site title font-size is at least 20px', async ({ page }) => {
@@ -161,5 +180,63 @@ test.describe('header — mobile (375×667)', () => {
     });
     // Desktop pill padding is 0.3rem (~4.8px), mobile override is 0.2rem (~3.2px)
     expect(mobilePadding).toBeLessThanOrEqual(4);
+  });
+});
+
+test.describe('pinned newsletter section', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('./');
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('pinned-newsletter is visible on Everyone tab when present', async ({ page }) => {
+    // The element may not exist if changelog.json has no newsletter events yet (first build).
+    // When it exists, it MUST be visible on the Everyone tab.
+    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
+    if (exists) {
+      await expect(page.locator('#pinned-newsletter')).toBeVisible();
+    }
+    // If absent, that's valid — no newsletter data yet.
+  });
+
+  test('pinned-newsletter is hidden on all non-Everyone tabs when present', async ({ page }) => {
+    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
+    if (!exists) return; // no newsletter data, nothing to assert
+
+    for (const tab of ['graduated', 'incubating', 'sandbox', 'archived']) {
+      await page.click(`[data-tab="${tab}"]`);
+      await expect(
+        page.locator('#pinned-newsletter'),
+        `pinned-newsletter must be hidden on the "${tab}" tab`,
+      ).toBeHidden();
+    }
+
+    // Switching back to Everyone must restore visibility
+    await page.click('[data-tab="everyone"]');
+    await expect(page.locator('#pinned-newsletter')).toBeVisible();
+  });
+
+  test('pinned-newsletter contains logo, title, and lwcn.dev link when present', async ({ page }) => {
+    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
+    if (!exists) return; // no newsletter data, nothing to assert
+
+    const section = page.locator('#pinned-newsletter');
+    await expect(section.locator('.pinned-newsletter-logo')).toBeVisible();
+    await expect(section.locator('.pinned-newsletter-title')).toBeVisible();
+    await expect(section.locator('.pinned-newsletter-cta')).toBeVisible();
+
+    const href = await section.locator('a.pinned-newsletter-card').getAttribute('href');
+    expect(href, 'pinned newsletter card must link to lwcn.dev').toMatch(/lwcn\.dev/);
+  });
+
+  test('pinned-newsletter badge reads "Latest Newsletter"', async ({ page }) => {
+    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
+    if (!exists) return;
+
+    const badge = page.locator('#pinned-newsletter .pinned-badge');
+    const text = await badge.textContent();
+    expect(text?.trim()).toContain('Latest Newsletter');
   });
 });
