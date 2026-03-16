@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Go tests
         run: cd projects-go && go test ./...
@@ -34,3 +34,9 @@ jobs:
           cp src/data/projects.json public/data/projects.json
           cp src/data/changelog.json public/data/changelog.json
           npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
