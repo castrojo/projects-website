@@ -12,6 +12,7 @@ export interface ChangelogEvent {
   description: string;
   lwcnIssueUrl?: string;
   lwcnTitle?: string;
+  lwcnWelcome?: string;
   mentionedProjects?: Array<{ name: string; slug: string; logoUrl: string; maturity: string }>;
 }
 

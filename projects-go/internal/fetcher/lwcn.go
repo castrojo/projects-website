@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +17,36 @@ import (
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
 )
+
+// htmlTagRe strips HTML tags for plain-text extraction.
+var htmlTagRe = regexp.MustCompile(`<[^>]*>`)
+
+// extractWelcomeText parses the HTML content of an LWCN newsletter entry and
+// returns the plain-text body of the "👋 Welcome" section (the opening paragraph).
+func extractWelcomeText(htmlContent string) string {
+	if htmlContent == "" {
+		return ""
+	}
+	// Strip all HTML tags, collapse whitespace to single spaces.
+	plain := htmlTagRe.ReplaceAllString(htmlContent, " ")
+	plain = strings.Join(strings.Fields(plain), " ")
+
+	// Locate the Welcome heading.
+	idx := strings.Index(plain, "Welcome")
+	if idx < 0 {
+		return ""
+	}
+	content := strings.TrimSpace(plain[idx+len("Welcome"):])
+
+	// Trim at the next emoji section heading so we only capture the intro paragraph.
+	for _, marker := range []string{"🚀", "📰", "💬", "📊", "📚"} {
+		if i := strings.Index(content, marker); i > 0 {
+			content = content[:i]
+			break
+		}
+	}
+	return strings.TrimSpace(content)
+}
 
 const (
 	LWCNFeedURL   = "https://lwcn.dev/newsletter/feed.xml"
@@ -160,6 +191,7 @@ func FetchLWCN(projects []models.SafeProject) ([]models.Event, error) {
 			Description:       item.Description,
 			LWCNIssueURL:      item.Link,
 			LWCNTitle:         item.Title,
+			LWCNWelcome:       extractWelcomeText(item.Content),
 			MentionedProjects: mentioned,
 		})
 	}

@@ -118,9 +118,9 @@ type SafeProject struct {
 
 // MentionedProject is a CNCF project referenced in a newsletter event
 type MentionedProject struct {
-	Name    string `json:"name"`
-	Slug    string `json:"slug"`
-	LogoURL string `json:"logoUrl"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	LogoURL  string `json:"logoUrl"`
 	Maturity string `json:"maturity"`
 }
 
@@ -138,6 +138,7 @@ type Event struct {
 	// LWCN newsletter-specific fields
 	LWCNIssueURL      string             `json:"lwcnIssueUrl,omitempty"`
 	LWCNTitle         string             `json:"lwcnTitle,omitempty"`
+	LWCNWelcome       string             `json:"lwcnWelcome,omitempty"`
 	MentionedProjects []MentionedProject `json:"mentionedProjects,omitempty"`
 }
 

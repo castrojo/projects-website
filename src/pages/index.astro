@@ -41,6 +41,10 @@ try {
   // changelog.json not yet generated — pinned newsletter won't show on first build
 }
 
+// Derive display title: "Last Week in Cloud Native - March 2026" from "Week 12 - March 2026"
+const lwcnMonth = pinnedNewsletter?.lwcnTitle?.replace(/^Week \d+ - /, '') ?? '';
+const pinnedTitle = lwcnMonth ? `Last Week in Cloud Native - ${lwcnMonth}` : 'Last Week in Cloud Native';
+
 const categories = [...new Set(projects.filter(p => p.maturity !== 'archived').map(p => p.category).filter(Boolean))].sort();
 
 const heroSets = selectHeroSets(projects);
@@ -127,7 +131,7 @@ function formatNumber(n: number): string {
         target="_blank"
         rel="noopener"
         class="pinned-newsletter-card"
-        aria-label={`Read LWCN newsletter: ${pinnedNewsletter.lwcnTitle}`}
+        aria-label={`Read LWCN newsletter: ${pinnedTitle}`}
       >
         <img
           src={pinnedNewsletter.logoUrl}
@@ -138,14 +142,29 @@ function formatNumber(n: number): string {
           class="pinned-newsletter-logo"
         />
         <div class="pinned-newsletter-body">
-          <div class="pinned-newsletter-title">{pinnedNewsletter.lwcnTitle ?? 'Last Week in Cloud Native'}</div>
+          <div class="pinned-newsletter-title">{pinnedTitle}</div>
           {pinnedNewsletter.description && (
             <p class="pinned-newsletter-desc">{pinnedNewsletter.description}</p>
           )}
+          {pinnedNewsletter.lwcnWelcome && (
+            <details class="pinned-newsletter-welcome">
+              <summary class="pinned-newsletter-welcome-summary">This week's overview</summary>
+              <p class="pinned-newsletter-welcome-text">{pinnedNewsletter.lwcnWelcome}</p>
+            </details>
+          )}
           <span class="pinned-newsletter-cta">Read issue →</span>
         </div>
-        <div class="pinned-newsletter-time">
-          {pinnedNewsletter.timestamp && formatRelativeDate(pinnedNewsletter.timestamp)}
+        <div class="pinned-newsletter-curator">
+          <span class="curator-label">Curated by</span>
+          <img
+            src="https://avatars.githubusercontent.com/mfahlandt"
+            alt="@mfahlandt avatar"
+            width="36"
+            height="36"
+            loading="eager"
+            class="curator-avatar"
+          />
+          <span class="curator-handle">@mfahlandt</span>
         </div>
       </a>
     </div>
@@ -502,10 +521,69 @@ function formatNumber(n: number): string {
     color: #0086FF;
   }
 
-  .pinned-newsletter-time {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
+  .pinned-newsletter-welcome {
+    margin: 0.25rem 0 0.375rem;
+  }
+
+  .pinned-newsletter-welcome-summary {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .pinned-newsletter-welcome-summary::before {
+    content: '▶';
+    font-size: 0.6rem;
+    transition: transform 0.15s ease;
+  }
+
+  .pinned-newsletter-welcome[open] .pinned-newsletter-welcome-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .pinned-newsletter-welcome-text {
+    margin: 0.375rem 0 0;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  .pinned-newsletter-curator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
     flex-shrink: 0;
+    min-width: 72px;
+  }
+
+  .curator-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .curator-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, #0086FF 40%, var(--color-border-default));
+    flex-shrink: 0;
+  }
+
+  .curator-handle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0086FF;
     white-space: nowrap;
   }
 
