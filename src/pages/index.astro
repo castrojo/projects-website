@@ -28,7 +28,7 @@ try {
   console.warn('projects.json not found — run just sync first');
 }
 
-// Latest LWCN newsletter — pinned card on Everyone tab, rendered at build time
+// Latest LWCN newsletter — pinned card on Everything tab, rendered at build time
 let pinnedNewsletter: ChangelogEvent | null = null;
 try {
   const changelogRaw = fs.readFileSync('src/data/changelog.json', 'utf-8');
@@ -116,7 +116,7 @@ function formatNumber(n: number): string {
     </div>
   )}
 
-  <!-- Pinned LWCN newsletter — static, build-time rendered, visible only on Everyone tab -->
+  <!-- Pinned LWCN newsletter — static, build-time rendered, visible only on Everything tab -->
   {pinnedNewsletter && (
     <div id="pinned-newsletter" class="pinned-newsletter-section">
       <div class="pinned-newsletter-label">
@@ -300,7 +300,7 @@ function formatNumber(n: number): string {
     if (heroesSection) heroesSection.style.display = '';
     if (staffSection) staffSection.style.display = '';
     if (changelogHeading) changelogHeading.style.display = '';
-    // Pinned newsletter only on Everyone tab
+    // Pinned newsletter only on Everything tab
     if (pinnedNewsletter) pinnedNewsletter.style.display = tab === 'everyone' ? '' : 'none';
     const heroKey = ['graduated','incubating','sandbox'].includes(tab) ? tab : 'everyone';
     document.querySelectorAll<HTMLElement>('.heroes-grid[data-heroes-tab]').forEach(grid => {

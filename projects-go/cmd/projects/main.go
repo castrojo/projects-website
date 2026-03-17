@@ -9,6 +9,7 @@ import (
 	"github.com/castrojo/projects-website/projects-go/internal/differ"
 	"github.com/castrojo/projects-website/projects-go/internal/enricher"
 	"github.com/castrojo/projects-website/projects-go/internal/fetcher"
+	"github.com/castrojo/projects-website/projects-go/internal/models"
 	"github.com/castrojo/projects-website/projects-go/internal/state"
 	"github.com/castrojo/projects-website/projects-go/internal/writer"
 )
@@ -22,17 +23,42 @@ func main() {
 		log.Fatalf("fetch error: %v", err)
 	}
 
-	if !result.Modified {
+	changelogPath := "../src/data/changelog.json"
+
+	// Determine which project list to use — fresh or cached.
+	// We need projects for LWCN mention-matching regardless of landscape ETag.
+	var projects []models.SafeProject
+	if result.Modified {
+		projects = result.Projects
+	} else {
 		fmt.Println("No changes (ETag matched). Loading previous data...")
 		prevData, err := state.LoadPreviousProjects()
 		if err != nil {
 			log.Fatalf("no previous data and no changes: %v", err)
 		}
-		var projects []interface{}
 		if err := json.Unmarshal(prevData, &projects); err != nil {
 			log.Fatalf("invalid previous data: %v", err)
 		}
 		fmt.Printf("Loaded %d projects from cache\n", len(projects))
+	}
+
+	// Always fetch LWCN — it runs on its own ETag cadence, independent of
+	// landscape changes. Without this, the newsletter never appears when the
+	// landscape data hasn't changed (the common case).
+	fmt.Println("Fetching LWCN newsletter feed...")
+	lwcnEvents, lwcnErr := fetcher.FetchLWCN(projects)
+	if lwcnErr != nil {
+		log.Printf("LWCN fetch warning (non-fatal): %v", lwcnErr)
+	} else if len(lwcnEvents) > 0 {
+		fmt.Printf("Fetched %d LWCN newsletter events\n", len(lwcnEvents))
+		if err := writer.WriteChangelog(lwcnEvents, changelogPath); err != nil {
+			log.Printf("LWCN changelog write warning (non-fatal): %v", err)
+		}
+	} else {
+		fmt.Println("LWCN feed unchanged or no new events")
+	}
+
+	if !result.Modified {
 		return
 	}
 
@@ -51,23 +77,8 @@ func main() {
 	events, updatedAt := differ.Diff(prevData, result.Projects)
 	fmt.Printf("Detected %d changelog events\n", len(events))
 
-	changelogPath := "../src/data/changelog.json"
 	if err := writer.WriteChangelog(events, changelogPath); err != nil {
 		log.Fatalf("writing changelog: %v", err)
-	}
-
-	// Fetch LWCN newsletter events (non-fatal)
-	fmt.Println("Fetching LWCN newsletter feed...")
-	lwcnEvents, lwcnErr := fetcher.FetchLWCN(result.Projects)
-	if lwcnErr != nil {
-		log.Printf("LWCN fetch warning (non-fatal): %v", lwcnErr)
-	} else if len(lwcnEvents) > 0 {
-		fmt.Printf("Fetched %d LWCN newsletter events\n", len(lwcnEvents))
-		if err := writer.WriteChangelog(lwcnEvents, changelogPath); err != nil {
-			log.Printf("LWCN changelog write warning (non-fatal): %v", err)
-		}
-	} else {
-		fmt.Println("LWCN feed unchanged or no new events")
 	}
 
 	if err := writer.WriteProjects(result.Projects, updatedAt); err != nil {

@@ -1,8 +1,10 @@
 package fetcher
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -63,9 +65,9 @@ func matchProjects(text string, nameMap map[string]models.SafeProject) []models.
 		if strings.Contains(lower, name) {
 			seen[p.Slug] = true
 			results = append(results, models.MentionedProject{
-				Name:    p.Name,
-				Slug:    p.Slug,
-				LogoURL: p.LogoURL,
+				Name:     p.Name,
+				Slug:     p.Slug,
+				LogoURL:  p.LogoURL,
 				Maturity: p.Maturity,
 			})
 		}
@@ -104,18 +106,31 @@ func FetchLWCN(projects []models.SafeProject) ([]models.Event, error) {
 		return nil, fmt.Errorf("lwcn: unexpected status %d", resp.StatusCode)
 	}
 
-	// Save new ETag/Last-Modified
+	// Save ETag/Last-Modified only after a successful parse (see below).
 	newState := lwcnState{
 		ETag:         resp.Header.Get("ETag"),
 		LastModified: resp.Header.Get("Last-Modified"),
 	}
-	saveLWCNState(newState)
+
+	// The lwcn.dev feed embeds HTML-escaped CDATA-like sequences in
+	// <content:encoded> using &lt;![CDATA[...]]> (not real CDATA). The
+	// trailing ]]> is unescaped text, which violates XML well-formedness.
+	// Sanitize it before parsing so gofeed doesn't choke.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("lwcn: read body: %w", err)
+	}
+	body = bytes.ReplaceAll(body, []byte("]]>"), []byte("]]&gt;"))
 
 	fp := gofeed.NewParser()
-	feed, err := fp.Parse(resp.Body)
+	feed, err := fp.Parse(bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("lwcn: parse feed: %w", err)
 	}
+
+	// Persist state only on successful parse so a transient error doesn't
+	// suppress the next fetch attempt.
+	saveLWCNState(newState)
 
 	nameMap := buildProjectNameMap(projects)
 	var events []models.Event
