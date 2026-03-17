@@ -92,8 +92,19 @@ const banners = await getActiveBanners();
           { text: "RSS Feed", url: `${base}/feed.xml`, rss: true },
           { text: "CNCF Landscape", url: "https://landscape.cncf.io", external: true },
           { text: "People Site", url: "https://castrojo.github.io/people-website/", external: true },
+          { text: "Report an issue", url: "https://github.com/castrojo/projects-website/issues", external: true },
         ]}
       />
+      {banners.length > 0 && <KubeConBanner banners={banners} />}
+      {stats && categories && categories.length > 0 && (
+        <div class="filter-box">
+          <h2 class="sidebar-heading">Filter by Category</h2>
+          <select id="category-filter" class="category-select" aria-label="Filter by landscape category">
+            <option value="">All categories</option>
+            {categories.map(cat => <option value={cat}>{cat}</option>)}
+          </select>
+        </div>
+      )}
       {stats && (
         <div class="stats-box">
           <h2 class="sidebar-heading">Projects</h2>
@@ -107,16 +118,6 @@ const banners = await getActiveBanners();
           )}
         </div>
       )}
-      {stats && categories && categories.length > 0 && (
-        <div class="filter-box">
-          <h2 class="sidebar-heading">Filter by Category</h2>
-          <select id="category-filter" class="category-select" aria-label="Filter by landscape category">
-            <option value="">All categories</option>
-            {categories.map(cat => <option value={cat}>{cat}</option>)}
-          </select>
-        </div>
-      )}
-      {banners.length > 0 && <KubeConBanner banners={banners} />}
     </aside>
       <div class="main-content">
         <slot />
