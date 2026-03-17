@@ -40,9 +40,9 @@ jobs:
             .sync-cache
             src/data/changelog.json
             src/data/projects.json
-          key: sync-cache-${{ runner.os }}-${{ github.run_id }}
+          key: sync-cache-v2-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
-            sync-cache-${{ runner.os }}-
+            sync-cache-v2-${{ runner.os }}-
 
       - name: Sync CNCF landscape data
         run: cd projects-go && go build -o projects cmd/projects/main.go && ./projects
@@ -55,7 +55,7 @@ jobs:
             .sync-cache
             src/data/changelog.json
             src/data/projects.json
-          key: sync-cache-${{ runner.os }}-${{ github.run_id }}
+          key: sync-cache-v2-${{ runner.os }}-${{ github.run_id }}
 
       - name: Install dependencies
         run: npm ci

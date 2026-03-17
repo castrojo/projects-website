@@ -26,6 +26,7 @@ pnpm-debug.log*
 # project-specific
 src/data/*
 !src/data/staff-support.json
+!src/data/changelog.json
 public/data/
 .sync-cache/
 projects-go/projects

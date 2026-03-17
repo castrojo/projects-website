@@ -38,7 +38,7 @@ test.describe('navigation', () => {
     const firstCard = page.locator('.project-card').first();
     await expect(firstCard).toBeVisible();
     // Should have a maturity badge
-    await expect(firstCard.locator('.maturity-badge, [class*="badge"]')).toBeVisible();
+    await expect(firstCard.locator('.maturity-badge')).toBeVisible();
     // Should have a name
     await expect(firstCard.locator('.card-name, .project-name, h3, h4')).toBeVisible();
   });

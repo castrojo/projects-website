@@ -5,7 +5,7 @@ test.describe('header — desktop (1280×800)', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('CNCF logo renders at exactly 42×42', async ({ page }) => {
@@ -121,14 +121,14 @@ test.describe('header — desktop (1280×800)', () => {
     expect(count).toBe(5);
   });
 
-  test('section-nav tabs are Everyone/Graduated/Incubating/Sandbox/Archived', async ({ page }) => {
+  test('section-nav tabs are Everything/Graduated/Incubating/Sandbox/Archived', async ({ page }) => {
     const tabs = await page.locator('.section-nav .section-link').allTextContents();
-    expect(tabs.map(t => t.trim())).toEqual(['Everyone', 'Graduated', 'Incubating', 'Sandbox', 'Archived']);
+    expect(tabs.map(t => t.trim())).toEqual(['Everything', 'Graduated', 'Incubating', 'Sandbox', 'Archived']);
   });
 
-  test('"Everyone" tab is active on load', async ({ page }) => {
+  test('"Everything" tab is active on load', async ({ page }) => {
     const activeTab = await page.locator('.section-nav .section-link.active').textContent();
-    expect(activeTab?.trim()).toBe('Everyone');
+    expect(activeTab?.trim()).toBe('Everything');
   });
 
   test('ThemeToggle button is visible', async ({ page }) => {
@@ -159,7 +159,7 @@ test.describe('header — mobile (375×667)', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('nav-group stacks below header-left on mobile', async ({ page }) => {
@@ -200,23 +200,15 @@ test.describe('pinned newsletter section', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
-  test('pinned-newsletter is visible on Everyone tab when present', async ({ page }) => {
-    // The element may not exist if changelog.json has no newsletter events yet (first build).
-    // When it exists, it MUST be visible on the Everyone tab.
-    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
-    if (exists) {
-      await expect(page.locator('#pinned-newsletter')).toBeVisible();
-    }
-    // If absent, that's valid — no newsletter data yet.
+  test('pinned-newsletter is visible on Everything tab', async ({ page }) => {
+    // changelog.json is committed — newsletter events are always present.
+    await expect(page.locator('#pinned-newsletter')).toBeVisible();
   });
 
-  test('pinned-newsletter is hidden on all non-Everyone tabs when present', async ({ page }) => {
-    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
-    if (!exists) return; // no newsletter data, nothing to assert
-
+  test('pinned-newsletter is hidden on all non-Everything tabs', async ({ page }) => {
     for (const tab of ['graduated', 'incubating', 'sandbox', 'archived']) {
       await page.click(`[data-tab="${tab}"]`);
       await expect(
@@ -225,15 +217,12 @@ test.describe('pinned newsletter section', () => {
       ).toBeHidden();
     }
 
-    // Switching back to Everyone must restore visibility
+    // Switching back to Everything must restore visibility
     await page.click('[data-tab="everyone"]');
     await expect(page.locator('#pinned-newsletter')).toBeVisible();
   });
 
-  test('pinned-newsletter contains logo, title, and lwcn.dev link when present', async ({ page }) => {
-    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
-    if (!exists) return; // no newsletter data, nothing to assert
-
+  test('pinned-newsletter contains logo, title, and lwcn.dev link', async ({ page }) => {
     const section = page.locator('#pinned-newsletter');
     await expect(section.locator('.pinned-newsletter-logo')).toBeVisible();
     await expect(section.locator('.pinned-newsletter-title')).toBeVisible();
@@ -244,11 +233,25 @@ test.describe('pinned newsletter section', () => {
   });
 
   test('pinned-newsletter badge reads "Latest Newsletter"', async ({ page }) => {
-    const exists = (await page.locator('#pinned-newsletter').count()) > 0;
-    if (!exists) return;
-
     const badge = page.locator('#pinned-newsletter .pinned-badge');
     const text = await badge.textContent();
     expect(text?.trim()).toContain('Latest Newsletter');
+  });
+
+  test('pinned-newsletter welcome widget renders with text', async ({ page }) => {
+    // The most recent newsletter event has lwcnWelcome set — the <details> widget must render.
+    const details = page.locator('#pinned-newsletter .pinned-newsletter-welcome');
+    await expect(details).toBeVisible();
+
+    const summary = details.locator('.pinned-newsletter-welcome-summary');
+    await expect(summary).toBeVisible();
+
+    // <p> inside <details> is hidden by default (collapsed). Click summary to expand.
+    await summary.click();
+
+    const body = details.locator('.pinned-newsletter-welcome-text');
+    await expect(body).toBeVisible();
+    const text = await body.textContent();
+    expect(text?.trim().length, 'welcome text must not be empty').toBeGreaterThan(0);
   });
 });
