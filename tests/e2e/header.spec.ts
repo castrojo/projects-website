@@ -19,6 +19,29 @@ test.describe('header — desktop (1280×800)', () => {
     expect(size!.h).toBe(42);
   });
 
+  test('.cncf-logo-wrapper computed width is exactly 42px — catches double-logo display bug', async ({ page }) => {
+    const wrapperWidth = await page.evaluate(() => {
+      const wrapper = document.querySelector('.cncf-logo-wrapper') as HTMLElement | null;
+      return wrapper ? Math.round(parseFloat(getComputedStyle(wrapper).width)) : null;
+    });
+    expect(wrapperWidth).not.toBeNull();
+    expect(
+      wrapperWidth,
+      '.cncf-logo-wrapper must be exactly 42px wide. If 84px, both logo-light AND ' +
+      'logo-dark imgs are visible (CSS specificity conflict: .cncf-logo-wrapper img ' +
+      '{display:block} overrides .logo-dark {display:none}). Fix: remove display:block ' +
+      'from .cncf-logo-wrapper img in layout.css.'
+    ).toBe(42);
+  });
+
+  test('logo-dark is invisible in light mode — only one logo shows at a time', async ({ page }) => {
+    const logoDarkDisplay = await page.evaluate(() => {
+      const logoDark = document.querySelector('.cncf-logo-wrapper .logo-dark') as HTMLElement | null;
+      return logoDark ? getComputedStyle(logoDark).display : null;
+    });
+    expect(logoDarkDisplay, '.logo-dark img must not be found or must be display:none in light mode').toBe('none');
+  });
+
   test('logo-to-title gap is ~8px (0.5rem) — no unexpected spacing between logo and title', async ({ page }) => {
     const gap = await page.evaluate(() => {
       const logo  = document.querySelector('.cncf-logo-wrapper');
